@@ -4,7 +4,7 @@ $: << File.expand_path(File.join(File.dirname(__FILE__),'..','lib'))
 require 'rz/service'
 
 class Service
-  include RZContext::Service
+  include RZ::Service
 
   def initialize
     initialize_service(
