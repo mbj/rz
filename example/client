@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+$: << File.expand_path(File.join(File.dirname(__FILE__),'..','lib'))
+
+require 'rz/client'
+
+class Client
+  include RZ::Client
+
+  def initialize
+    initialize_client :peer_address => 'tcp://127.0.0.1:4000', :identity => 'client'
+  end
+end
+
+client = Client.new
+1000.times do |i|
+  a = Time.now
+  client.request :echo, i
+end
+
+sleep 10
+
+1000.times do |i|
+  x = client.receive :timeout => 1000
+  x = x.first
+  p "x: #{x} i: #{i}"
+  b = Time.now
+end
+client.send(:zmq_cleanup)

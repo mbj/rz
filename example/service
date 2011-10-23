@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+$: << File.expand_path(File.join(File.dirname(__FILE__),'..','lib'))
+
+require 'rz/service'
+
+class Service
+  include RZContext::Service
+
+  def initialize
+    initialize_service(
+      :frontend_address => 'tcp://127.0.0.1:4000',
+      :backend_address  => 'tcp://127.0.0.1:4001',
+      :identity         => 'service'
+    )
+  end
+end
+
+Service.new.run

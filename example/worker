@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+$: << File.expand_path(File.join(File.dirname(__FILE__),'..','lib'))
+
+require 'rz/worker'
+
+class Worker
+  include RZContext::Worker
+
+  def initialize
+    initialize_worker :peer_address => 'tcp://127.0.0.1:4001', :identity => 'worker'
+  end
+end
+
+Worker.new.run
