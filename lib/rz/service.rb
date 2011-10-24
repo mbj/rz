@@ -10,8 +10,9 @@ module RZ
       frontend
       backend_req_b
       self.active_req_socket = backend_req_a
+      self.blocking_socket   = frontend
       loop do
-        ready = ZMQ.select([backend_res,frontend],nil,nil,1)
+        ready = ZMQ.select([backend_res,blocking_socket],nil,nil,1)
         if ready
           process_ready ready.first
         else
@@ -24,6 +25,9 @@ module RZ
 
     attr_reader :identity,:frontend_address,:backend_res_address,:backend_req_address_a,:backend_req_address_b
 
+    attr_reader :active_req_socket, :blocking_socket
+    private :active_req_socket, :blocking_socket
+
     def initialize_service(options)
       @frontend_address      = options.fetch(:frontend_address)      { raise ArgumentError,'missing :frontend_address' }
       @backend_req_address_a = options.fetch(:backend_req_address_a) { raise ArgumentError,'missing :backend_req_address_a'  }
@@ -32,13 +36,18 @@ module RZ
       @identity              = options.fetch(:identity,nil)
     end
 
-    def active_req_socket
-      @active_req_socket || raise('no req socket is active')
-    end
-
     def active_req_socket=(socket)
+      if active_req_socket == blocking_socket
+        self.blocking_socket = socket
+      end
       @active_req_socket=socket
       debug { "switched active req socket to: #{zmq_identity(socket)}" }
+    end
+
+    def blocking_socket=(socket)
+      return if @blocking_socket == socket
+      @blocking_socket = socket
+      debug { "switched blocking socket to: #{zmq_identity(socket)}" }
     end
 
     def switch_active_req_socket
@@ -54,16 +63,30 @@ module RZ
       ready.each do |socket|
         case socket
         when backend_res
+          p :backend
           # Pusing response to client
-          addr,body = zmq_split(zmq_recv(backend_res))
-          zmq_send(frontend,body)
+          addr,body = zmq_split zmq_recv(backend_res)
+          zmq_send frontend,body
         when frontend
-          # Finding ready worker
-          worker = zmq_recv(active_req_socket,ZMQ::NOBLOCK)
-          if worker
-            addr,body = zmq_split(zmq_recv(frontend))
-            worker_addr,worker_body = zmq_split(worker)
-            zmq_send active_req_socket,worker_addr + addr + DELIM + body
+          p :frontend
+          # Find worker for job
+          message = zmq_recv(active_req_socket,ZMQ::NOBLOCK)
+          if message
+            job_addr,job_body = zmq_split zmq_recv(frontend)
+            worker_addr,worker_body = zmq_split message
+            zmq_send active_req_socket,worker_addr + job_addr + DELIM + job_body
+          else
+            self.blocking_socket = active_req_socket
+          end
+        when active_req_socket
+          # Find job for worker
+          message = zmq_recv frontend,ZMQ::NOBLOCK
+          if message
+            worker_addr,worker_body = zmq_split zmq_recv(active_req_socket)
+            job_addr,job_body = zmq_split message
+            zmq_send active_req_socket,worker_addr + job_addr + DELIM + job_body
+          else
+            self.blocking_socket = frontend
           end
         else
           raise

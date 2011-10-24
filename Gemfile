@@ -1,4 +1,4 @@
-require 'zmq'
+gem 'zmq'
 
 group :development,:test do
   gem 'rspec'
