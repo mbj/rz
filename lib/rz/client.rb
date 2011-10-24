@@ -30,8 +30,8 @@ module RZ
 
     def service_socket
       zmq_named_socket :service,ZMQ::DEALER do |socket|
-        socket.connect peer_address
         socket.setsockopt(ZMQ::IDENTITY,identity) if identity
+        socket.connect peer_address
       end
     end
   end

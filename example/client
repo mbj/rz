@@ -13,26 +13,30 @@ class Client
   end
 
   def initialize
-    initialize_client :peer_address => 'tcp://127.0.0.1:4000', :identity => 'client'
+    initialize_client(
+      :peer_address => 'tcp://127.0.0.1:4000', 
+      :identity => "client.#{Process.pid}"
+    )
   end
 end
 
 Client.new.run do |client|
   puts 'executing 1000 asynchronous requests'
 
-  1000.times do |i|
-    client.request :echo, i
+  20.times do |i|
+    client.request :eval, "sleep 1; #{i}"
   end
-
-  puts 'waiting 10 seconds'
-
-  sleep 10
 
   puts 'receiving answers'
 
-  1000.times do |i|
+  a = Time.now
+
+  20.times do |i|
     x = client.receive :timeout => 1000
-    x = x.first
     p "x: #{x} i: #{i}"
   end
+
+   b = Time.now
+
+   puts "did work in: #{b-a} seconds"
 end

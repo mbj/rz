@@ -4,11 +4,13 @@ module RZ
   module Context
 
   HALLO = ['HALLO'].freeze
+  NOOP  = ['NOOP'].freeze
   DELIM = [''].freeze
 
   private
 
     def log(level,&block)
+      $stderr.puts block.call
     end
 
     def debug(&block)

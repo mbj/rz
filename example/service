@@ -8,9 +8,11 @@ class Service
 
   def initialize
     initialize_service(
-      :frontend_address => 'tcp://127.0.0.1:4000',
-      :backend_address  => 'tcp://127.0.0.1:4001',
-      :identity         => 'service'
+      :frontend_address      => 'tcp://127.0.0.1:4000',
+      :backend_res_address   => 'tcp://127.0.0.1:4001',
+      :backend_req_address_a => 'tcp://127.0.0.1:4002',
+      :backend_req_address_b => 'tcp://127.0.0.1:4003',
+      :identity              => 'service'
     )
   end
 end
