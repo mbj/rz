@@ -65,7 +65,14 @@ module RZ
         return
       end
       info { "executing: #{name}, #{arguments.inspect}" }
-      block.call *arguments
+      case block
+      when Proc
+        block.call *arguments
+      when true
+        send(name,*arguments)
+      else
+        raise
+      end
     end
 
     def process_job(client_address,job)
@@ -120,18 +127,13 @@ module RZ
 
     private
 
-      def register(name,method=nil,&block)
+      def register(name,&block)
         name = name.to_s
         if registry.key? name
-          raise ArgumentError,"#{type} #{name} is already registred"
+          raise ArgumentError,"#{name.inspect} is already registred"
         end
-        if method and block
-          raise ArgumentError,'method or block must be given not both'
-        end
-        unless method or block
-          raise ArgumentError,'method or block must be given'
-        end
-        registry[name]= block || self.method(method)
+        registry[name] = block || true
+        self
       end
     end
 
