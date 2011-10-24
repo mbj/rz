@@ -14,11 +14,10 @@ Gem::Specification.new do |s|
   s.summary     = 'jobserver build on top of zmq'
  
   s.required_rubygems_version = '>= 1.3.6'
-  #s.rubyforge_project         = 'bundler'
  
-  s.add_runtime_dependency 'rz', '~> 2.1.4'
+  s.add_runtime_dependency 'zmq', '~> 2.1.4'
   s.add_development_dependency 'rspec'
  
-  s.files        = Dir.glob("{bin,lib}/**/*") + %w(LICENSE README.md)
+  s.files        = Dir.glob('lib/**/*') + %w(LICENSE VERSION README.md)
   s.require_path = 'lib'
 end
