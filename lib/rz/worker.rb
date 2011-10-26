@@ -8,8 +8,8 @@ module RZ
     attr_reader :peer_res_address,:peer_req_address_a,:peer_req_address_b,:identity
 
     def run
-      peer_req_socket_b
-      self.active_req_socket=peer_req_socket_a
+      request_socket_b
+      self.active_req_socket=request_socket_a
       loop do
         response = pull_job
         case response
@@ -20,9 +20,10 @@ module RZ
           client_address,job = response
           process_job(client_address,job)
         else
-          zmq_named_socket_close :peer_req_socket_a
-          zmq_named_socket_close :peer_req_socket_b
-          self.active_req_socket=peer_req_socket_a
+          active = active_req_socket == request_socket_a ? :a : :b
+          zmq_named_socket_close :request_socket_a
+          zmq_named_socket_close :request_socket_b
+          self.active_req_socket= active == :a ? request_socket_b : request_socket_a
         end
       end
     ensure
@@ -44,8 +45,8 @@ module RZ
 
     def switch_active_socket
       self.active_req_socket = case active_req_socket
-      when peer_req_socket_a then peer_req_socket_b
-      when peer_req_socket_b then peer_req_socket_a
+      when request_socket_a then request_socket_b
+      when request_socket_b then request_socket_a
       else 
         raise
       end
@@ -53,7 +54,7 @@ module RZ
 
     def active_req_socket=(socket)
       @active_req_socket=socket
-      puts "switched to socket: #{zmq_identity(socket)}"
+      debug { "switched to socket: #{zmq_identity(socket)}" }
     end
 
     def dispatch_job(job)
@@ -80,7 +81,7 @@ module RZ
       job = JSON.load(job.first)
       result = dispatch_job(job)
       result = JSON.dump(:result => result)
-      zmq_send(peer_res_socket,DELIM + client_address + DELIM + [result])
+      zmq_send(response_socket,DELIM + client_address + DELIM + [result])
     end
 
     def pull_job
@@ -95,24 +96,24 @@ module RZ
       end
     end
 
-    def peer_req_socket_a
-      zmq_named_socket(:peer_req_socket_a,ZMQ::DEALER) do |socket|
+    def request_socket_a
+      zmq_named_socket(:request_socket_a,ZMQ::DEALER) do |socket|
         socket.setsockopt(ZMQ::IDENTITY,"#{identity}.req.a") if identity
         socket.setsockopt(ZMQ::LINGER,0)
         socket.connect peer_req_address_a
       end
     end
 
-    def peer_req_socket_b
-      zmq_named_socket(:peer_req_socket_b,ZMQ::DEALER) do |socket|
+    def request_socket_b
+      zmq_named_socket(:request_socket_b,ZMQ::DEALER) do |socket|
         socket.setsockopt(ZMQ::IDENTITY,"#{identity}.req.b") if identity
         socket.setsockopt(ZMQ::LINGER,0)
         socket.connect peer_req_address_b
       end
     end
 
-    def peer_res_socket
-      zmq_named_socket(:peer_res_socket,ZMQ::DEALER) do |socket|
+    def response_socket
+      zmq_named_socket(:response_socket,ZMQ::DEALER) do |socket|
         socket.setsockopt(ZMQ::IDENTITY,"#{identity}.res") if identity
         socket.setsockopt(ZMQ::LINGER,0)
         socket.connect peer_res_address
