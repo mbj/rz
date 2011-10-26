@@ -8,8 +8,8 @@ module RZ
     def run
       # initializing sockets
       frontend
-      backend_req_b
-      self.active_req_socket = backend_req_a
+      request_socket_b
+      self.active_req_socket = request_socket_a
       self.blocking_socket   = frontend
       loop do
         ready = ZMQ.select([backend_res,blocking_socket],nil,nil,1)
@@ -23,16 +23,16 @@ module RZ
 
   private
 
-    attr_reader :identity,:frontend_address,:backend_res_address,:backend_req_address_a,:backend_req_address_b
+    attr_reader :identity,:frontend_address,:backend_res_address,:request_address_a,:request_address_b
 
     attr_reader :active_req_socket, :blocking_socket
     private :active_req_socket, :blocking_socket
 
     def initialize_service(options)
-      @frontend_address      = options.fetch(:frontend_address)      { raise ArgumentError,'missing :frontend_address' }
-      @backend_req_address_a = options.fetch(:backend_req_address_a) { raise ArgumentError,'missing :backend_req_address_a'  }
-      @backend_req_address_b = options.fetch(:backend_req_address_b) { raise ArgumentError,'missing :backend_req_address_b'  }
-      @backend_res_address   = options.fetch(:backend_res_address)   { raise ArgumentError,'missing :backend_res_address'  }
+      @frontend_address      = options.fetch(:frontend_address)    { raise ArgumentError,'missing :frontend_address' }
+      @request_address_a     = options.fetch(:request_address_a)   { raise ArgumentError,'missing :request_address_a'  }
+      @request_address_b     = options.fetch(:request_address_b)   { raise ArgumentError,'missing :request_address_b'  }
+      @backend_res_address   = options.fetch(:backend_res_address) { raise ArgumentError,'missing :backend_res_address'  }
       @identity              = options.fetch(:identity,nil)
     end
 
@@ -52,8 +52,8 @@ module RZ
 
     def switch_active_req_socket
       self.active_req_socket = case active_req_socket
-      when backend_req_a then backend_req_b
-      when backend_req_b then backend_req_a
+      when request_socket_a then request_socket_b
+      when request_socket_b then request_socket_a
       else
         raise
       end
@@ -104,17 +104,17 @@ module RZ
       switch_active_req_socket
     end
 
-    def backend_req_a
-      zmq_named_socket :backend_req_a,ZMQ::ROUTER do |socket|
+    def request_socket_a
+      zmq_named_socket :request_socket_a,ZMQ::ROUTER do |socket|
         socket.setsockopt ZMQ::IDENTITY,"#{identity}.req.backend.a" if identity
-        socket.bind backend_req_address_a
+        socket.bind request_address_a
       end
     end
 
-    def backend_req_b
-      zmq_named_socket :backend_req_b,ZMQ::ROUTER do |socket|
+    def request_socket_b
+      zmq_named_socket :request_socket_b,ZMQ::ROUTER do |socket|
         socket.setsockopt ZMQ::IDENTITY,"#{identity}.req.backend.b" if identity
-        socket.bind backend_req_address_b
+        socket.bind request_address_b
       end
     end
 
