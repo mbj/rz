@@ -5,7 +5,7 @@ module RZ
   module Client
     include Context
 
-    attr_reader :peer_address,:identity
+    attr_reader :service_address,:identity
 
     def request(name,*arguments)
       job = { :name => name, :arguments => arguments }
@@ -24,14 +24,14 @@ module RZ
   private
 
     def initialize_client(options)
-      @peer_address = options.fetch(:peer_address) { raise ArgumentError,'missing :peer_address in options' }
-      @identity     = options.fetch(:identity,nil)
+      @service_address = options.fetch(:service_address) { raise ArgumentError,'missing :service_address in options' }
+      @identity        = options.fetch(:identity,nil)
     end
 
     def service_socket
       zmq_named_socket :service,ZMQ::DEALER do |socket|
         socket.setsockopt(ZMQ::IDENTITY,identity) if identity
-        socket.connect peer_address
+        socket.connect service_address
       end
     end
   end
