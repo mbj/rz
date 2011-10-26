@@ -5,11 +5,11 @@ module RZ
   module Worker
     include Context
 
-    attr_reader :peer_res_address,:peer_req_address_a,:peer_req_address_b,:identity
+    attr_reader :response_address,:request_address_a,:request_address_b,:identity
 
     def run
       request_socket_b
-      self.active_req_socket=request_socket_a
+      self.active_request_socket=request_socket_a
       loop do
         response = pull_job
         case response
@@ -20,10 +20,10 @@ module RZ
           client_address,job = response
           process_job(client_address,job)
         else
-          active = active_req_socket == request_socket_a ? :a : :b
+          active = active_request_socket == request_socket_a ? :a : :b
           zmq_named_socket_close :request_socket_a
           zmq_named_socket_close :request_socket_b
-          self.active_req_socket= active == :a ? request_socket_b : request_socket_a
+          self.active_request_socket= active == :a ? request_socket_b : request_socket_a
         end
       end
     ensure
@@ -33,18 +33,18 @@ module RZ
   private
 
     def initialize_worker(options)
-      @peer_res_address = options.fetch(:peer_res_address) { raise ArgumentError,'missing :peer_res_address in options' }
-      @peer_req_address_a = options.fetch(:peer_req_address_a) { raise ArgumentError,'missing :peer_req_address_a in options' }
-      @peer_req_address_b = options.fetch(:peer_req_address_b) { raise ArgumentError,'missing :peer_req_address_b in options' }
+      @response_address = options.fetch(:response_address) { raise ArgumentError,'missing :response_address in options' }
+      @request_address_a = options.fetch(:request_address_a) { raise ArgumentError,'missing :request_address_a in options' }
+      @request_address_b = options.fetch(:request_address_b) { raise ArgumentError,'missing :request_address_b in options' }
       @identity     = options.fetch(:identity,nil)
     end
 
-    def active_req_socket
-      @active_req_socket || raise("no req socket is currently active")
+    def active_request_socket
+      @active_request_socket || raise("no req socket is currently active")
     end
 
     def switch_active_socket
-      self.active_req_socket = case active_req_socket
+      self.active_request_socket = case active_request_socket
       when request_socket_a then request_socket_b
       when request_socket_b then request_socket_a
       else 
@@ -52,8 +52,8 @@ module RZ
       end
     end
 
-    def active_req_socket=(socket)
-      @active_req_socket=socket
+    def active_request_socket=(socket)
+      @active_request_socket=socket
       debug { "switched to socket: #{zmq_identity(socket)}" }
     end
 
@@ -85,10 +85,10 @@ module RZ
     end
 
     def pull_job
-      zmq_send active_req_socket,DELIM + HALLO
-      ready = ZMQ.select([active_req_socket],nil,nil,10)
+      zmq_send active_request_socket,DELIM + HALLO
+      ready = ZMQ.select([active_request_socket],nil,nil,10)
       return unless ready
-      client_address,job_body =  zmq_split(zmq_recv(active_req_socket))
+      client_address,job_body =  zmq_split(zmq_recv(active_request_socket))
       if job_body.first == 'NOOP'
         :noop
       else
@@ -100,7 +100,7 @@ module RZ
       zmq_named_socket(:request_socket_a,ZMQ::DEALER) do |socket|
         socket.setsockopt(ZMQ::IDENTITY,"#{identity}.req.a") if identity
         socket.setsockopt(ZMQ::LINGER,0)
-        socket.connect peer_req_address_a
+        socket.connect request_address_a
       end
     end
 
@@ -108,7 +108,7 @@ module RZ
       zmq_named_socket(:request_socket_b,ZMQ::DEALER) do |socket|
         socket.setsockopt(ZMQ::IDENTITY,"#{identity}.req.b") if identity
         socket.setsockopt(ZMQ::LINGER,0)
-        socket.connect peer_req_address_b
+        socket.connect request_address_b
       end
     end
 
@@ -116,7 +116,7 @@ module RZ
       zmq_named_socket(:response_socket,ZMQ::DEALER) do |socket|
         socket.setsockopt(ZMQ::IDENTITY,"#{identity}.res") if identity
         socket.setsockopt(ZMQ::LINGER,0)
-        socket.connect peer_res_address
+        socket.connect response_address
       end
     end
 

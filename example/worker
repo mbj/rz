@@ -8,9 +8,9 @@ class Worker
 
   def initialize
     initialize_worker(
-      :peer_res_address   => 'tcp://127.0.0.1:4001',
-      :peer_req_address_a => 'tcp://127.0.0.1:4002', 
-      :peer_req_address_b => 'tcp://127.0.0.1:4003', 
+      :response_address   => 'tcp://127.0.0.1:4001',
+      :request_address_a => 'tcp://127.0.0.1:4002', 
+      :request_address_b => 'tcp://127.0.0.1:4003', 
       :identity => "worker#{Process.pid}"
     )
   end
