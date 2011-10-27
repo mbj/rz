@@ -1,17 +1,15 @@
 # Ruby ZMQ job server with truly pulling workers.
 
-This is a playground to build a ruby job server that solves some of my messaging problems 
-using ZMQ primitives. 
 
-Maybe this all would be solved just by using rabbbitMQ and friends. 
+This project is primarily a playground to build a ruby job server that solves some of my 
+messaging problems using ZMQ primitives. 
 
-But I wanna learn about this topic more in depth. 
+Currently the subject is task distribution in a classic multi worker central job-distributor setup.
 
-I'm thinking about ZMQ as a messaging framework not a prebuild solution. So pls keep in mind my 
-"Problems" below are not problems of zmq itself. 
+[ZMQ](http://zeromq.org) is a messaging framework not a out-of-the-box messaging solution. 
+So please keep in mind my "Problems" below are not problems of ZMQ itself. 
 
-The subject is task distribution in a classic multi worker central job-distributor setup.
-(I'm also interested in the freelance patterns)
+Maybe this all is solved just by using rabbbitMQ and friends. But it makes more fun to wrap my head around these problems for myself.
 
 ### Problem 1: Peers cannot know how busy a worker is.
 
@@ -46,7 +44,7 @@ The subject is task distribution in a classic multi worker central job-distribut
 ### Idea: Let the workers pull work from the server. 
 
   When workers are pulling the servers for work there is no worker side queue of unprocessed,
-  lost-in-case-of-crash or present-in-mailbox where other workers do not have anything to do.
+  lost-in-case-of-crash or present-in-mailbox-while-other-workers-do-not-have-anything-to-do.
 
 ## Implementation:
 
