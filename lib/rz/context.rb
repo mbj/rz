@@ -9,8 +9,8 @@ module RZ
 
   private
 
+    # NOOP override this if you whant to log messages
     def log(level,&block)
-      $stderr.puts block.call
     end
 
     def debug(&block)
@@ -26,7 +26,7 @@ module RZ
     end
 
     def error(&block)
-      log :warn,&block 
+      log :error,&block 
     end
 
     def zmq_cleanup

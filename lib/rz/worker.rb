@@ -2,7 +2,18 @@ require 'json'
 require 'rz/context'
 
 module RZ
+  class JobExecutionError < RuntimeError
+    attr_reader :original_exception
+    attr_reader :job
+
+    def initialize(original_exception,job)
+      @original_exception,@job = original_exception,job
+      super "job #{job.fetch('name').inspect} failed with #{original_exception.class}"
+    end
+  end
+
   module Worker
+
     include Context
 
     attr_reader :response_address,:request_address_a,:request_address_b,:identity
@@ -58,30 +69,42 @@ module RZ
     end
 
     def dispatch_job(job)
-      name = job.fetch 'name'
-      arguments = job.fetch 'arguments'
+      name      = job.fetch('name')      { raise ArgumentError,'missing "name" in options'      }
+      arguments = job.fetch('arguments') { raise ArgumentError,'missing "arguments" in options' }
       block = self.class.registry[name]
+
       unless block
-        warn { "name: #{name.inspect} is not registred" }
-        return
+        raise ArgumentError,"job #{name.inspect} is not registred"
       end
+
       info { "executing: #{name}, #{arguments.inspect}" }
-      case block
-      when Proc
-        block.call *arguments
-      when true
-        send(name,*arguments)
-      else
-        raise
+
+      begin
+        case block
+        when Proc
+          block.call *arguments
+        when true
+          send(name,*arguments)
+        end
+      rescue Exception => exception
+        raise JobExecutionError.new(exception,job)
       end
     end
 
     def process_job(client_address,job)
       raise unless job.length == 1
       job = JSON.load(job.first)
-      result = dispatch_job(job)
-      result = JSON.dump(:result => result)
-      zmq_send(response_socket,DELIM + client_address + DELIM + [result])
+      begin
+        result = dispatch_job(job)
+        result = JSON.dump(:result => result)
+        zmq_send(response_socket,DELIM + client_address + DELIM + [result])
+      rescue JobExecutionError => job_execution_exception
+        exception = job_execution_exception.original_exception
+        error { "exception captured while dispatching: #{exception.class.name}" }
+        exception.backtrace.each do |trace|
+          error { trace }
+        end
+      end
     end
 
     def pull_job
