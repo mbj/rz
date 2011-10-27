@@ -22,7 +22,7 @@ module RZ
         else
           noop
         end
-        reset_stats if (@loops % 1000).zero?
+        reset_stats if (@loops % 100).zero?
         print_stats
       end
     end
@@ -75,7 +75,7 @@ module RZ
     end
 
     def print_stats
-      $stderr.puts "requests: %03d responses: %03d noops: %03d messages/s %0.2f messages/s short %02.f" % [requests,responses,noops,messages_per_second,short_messages_per_second]
+      $stderr.puts "requests: %03d responses: %03d noops: %03d messages/s %0.2f messages/s short %0.2f" % [requests,responses,noops,messages_per_second,short_messages_per_second]
       self
     end
 
@@ -85,6 +85,10 @@ module RZ
 
     def messages_per_second
       messages / (Time.now - @loop_start)
+    end
+
+    def short_messages
+      messages - @short_count
     end
 
     def short_messages_per_second
