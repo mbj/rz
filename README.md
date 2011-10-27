@@ -1,10 +1,14 @@
 # Ruby ZMQ job server with truly pulling workers.
 
-This is a playground to build something that solves some of my messaging problems 
-using ZMQ primitives. Maybe this all would be solved just by using rabbbitMQ 
-and friends. But I wanna learn about this topic more in depth. I'm thinking about 
-ZMQ as a messaging framework. So pls keep in mind my "Problems" below are not problems 
-of zmq itself. 
+This is a playground to build a ruby job server that solves some of my messaging problems 
+using ZMQ primitives. 
+
+Maybe this all would be solved just by using rabbbitMQ and friends. 
+
+But I wanna learn about this topic more in depth. 
+
+I'm thinking about ZMQ as a messaging framework not a prebuild solution. So pls keep in mind my 
+"Problems" below are not problems of zmq itself. 
 
 The subject is task distribution in a classic multi worker central job-distributor setup.
 (I'm also interested in the freelance patterns)
