@@ -12,13 +12,17 @@ module RZ
       self.active_req_socket = request_socket_a
       self.blocking_socket   = frontend
       @loop_start = Time.now
+
+      reset_stats
       loop do
+        @loops += 1
         ready = ZMQ.select([response_socket,blocking_socket],nil,nil,1)
         if ready
           process_ready ready.first
         else
           noop
         end
+        reset_stats if (@loops % 1000).zero?
         print_stats
       end
     end
@@ -27,7 +31,7 @@ module RZ
 
     attr_reader :identity,:frontend_address,:response_address,:request_address_a,:request_address_b
 
-    attr_reader :requests,:responses,:noops
+    attr_reader :requests,:responses,:noops,:loops
 
     attr_reader :active_req_socket, :blocking_socket
     private :active_req_socket, :blocking_socket
@@ -39,7 +43,7 @@ module RZ
       @response_address      = options.fetch(:response_address) { raise ArgumentError,'missing :response_address'  }
       @identity              = options.fetch(:identity,nil)
 
-      @noops = @requests = @responses = 0
+      @loops = @noops = @requests = @responses = 0
     end
 
     def active_req_socket=(socket)
@@ -65,13 +69,26 @@ module RZ
       end
     end
 
+    def reset_stats
+      @short_time = Time.now
+      @short_count = (requests + responses)
+    end
+
     def print_stats
-      $stderr.puts "requests: %03d responses: %03d noops: %03d messages/s %0.4f" % [requests,responses,noops,messages_per_second]
+      $stderr.puts "requests: %03d responses: %03d noops: %03d messages/s %0.2f messages/s short %02.f" % [requests,responses,noops,messages_per_second,short_messages_per_second]
       self
     end
 
+    def messages
+      requests + responses
+    end
+
     def messages_per_second
-      (requests + responses) / (Time.now - @loop_start)
+      messages / (Time.now - @loop_start)
+    end
+
+    def short_messages_per_second
+      short_messages / (Time.now - @short_time)
     end
 
     def process_ready(ready)
