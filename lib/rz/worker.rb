@@ -105,7 +105,7 @@ module RZ
         zmq_send(response_socket,DELIM + client_address + DELIM + [result])
       rescue JobExecutionError => job_execution_exception
         exception = job_execution_exception.original_exception
-        error { "exception captured while dispatching: #{exception.class.name}" }
+        error { "exception captured while dispatching: #{exception.class.name} #{exception.message}" }
         exception.backtrace.each do |trace|
           error { trace }
         end
