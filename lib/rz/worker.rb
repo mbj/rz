@@ -87,7 +87,12 @@ module RZ
           send(name,*arguments)
         end
       rescue Exception => exception
-        raise JobExecutionError.new(exception,job)
+        # Reraise interrupts unmodified to make sure we do not refuse to stopwe do not refuse to stop
+        if exception.kind_of? Interrupt
+          raise
+        else
+          raise JobExecutionError.new(exception,job)
+        end
       end
     end
 

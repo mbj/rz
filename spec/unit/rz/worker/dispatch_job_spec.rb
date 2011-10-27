@@ -9,6 +9,10 @@ describe RZ::Worker,'#dispatch_job' do
         raise
       end
 
+      register :interrupt do
+        raise Interrupt
+      end
+
       register :test_job do
         'result value'
       end
@@ -52,6 +56,14 @@ describe RZ::Worker,'#dispatch_job' do
 
     it 'should raise RZ::JobExecutionError' do
       expect { subject }.to raise_error(RZ::JobExecutionError,'job "job_that_raises" failed with RuntimeError')
+    end
+  end
+
+  context 'when job raises an Interrupt' do
+    let(:job) { { 'name' => 'interrupt', 'arguments' => [] } }
+
+    it 'should raise Interrupt' do
+      expect { subject }.to raise_error(Interrupt)
     end
   end
 end
