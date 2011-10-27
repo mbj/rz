@@ -12,7 +12,7 @@ module RZ
       self.active_req_socket = request_socket_a
       self.blocking_socket   = frontend
       loop do
-        ready = ZMQ.select([backend_res,blocking_socket],nil,nil,1)
+        ready = ZMQ.select([response_socket,blocking_socket],nil,nil,1)
         if ready
           process_ready ready.first
         else
@@ -23,7 +23,7 @@ module RZ
 
   private
 
-    attr_reader :identity,:frontend_address,:backend_res_address,:request_address_a,:request_address_b
+    attr_reader :identity,:frontend_address,:response_address,:request_address_a,:request_address_b
 
     attr_reader :active_req_socket, :blocking_socket
     private :active_req_socket, :blocking_socket
@@ -32,7 +32,7 @@ module RZ
       @frontend_address      = options.fetch(:frontend_address)    { raise ArgumentError,'missing :frontend_address' }
       @request_address_a     = options.fetch(:request_address_a)   { raise ArgumentError,'missing :request_address_a'  }
       @request_address_b     = options.fetch(:request_address_b)   { raise ArgumentError,'missing :request_address_b'  }
-      @backend_res_address   = options.fetch(:backend_res_address) { raise ArgumentError,'missing :backend_res_address'  }
+      @response_address   = options.fetch(:response_address) { raise ArgumentError,'missing :response_address'  }
       @identity              = options.fetch(:identity,nil)
     end
 
@@ -62,10 +62,10 @@ module RZ
     def process_ready(ready)
       ready.each do |socket|
         case socket
-        when backend_res
+        when response_socket
           p :backend
           # Pusing response to client
-          addr,body = zmq_split zmq_recv(backend_res)
+          addr,body = zmq_split zmq_recv(response_socket)
           zmq_send frontend,body
         when frontend
           p :frontend
@@ -118,10 +118,10 @@ module RZ
       end
     end
 
-    def backend_res
-      zmq_named_socket :backend_res,ZMQ::ROUTER do |socket|
+    def response_socket
+      zmq_named_socket :response_socket,ZMQ::ROUTER do |socket|
         socket.setsockopt ZMQ::IDENTITY,"#{identity}.res.backend" if identity
-        socket.bind backend_res_address
+        socket.bind response_address
       end
     end
 
