@@ -9,7 +9,7 @@ of zmq itself.
 The subject is task distribution in a classic multi worker central job-distributor setup.
 (I'm also interested in the freelance patterns)
 
-## Problem 1: Peers cannot know how busy a worker is.
+### Problem 1: Peers cannot know how busy a worker is.
 
   This is a generic problem. Peers can only infer worker workload using connection counts 
   like haproxy or other strategies like round robin etc. 
@@ -20,7 +20,7 @@ The subject is task distribution in a classic multi worker central job-distribut
     A zmq PULL socket connecting a PUSH socket does not really pull from the server. 
     It pulls from the local mailbox.
 
-## Problem 2: Lost tasks in worker mailboxes on crash
+### Problem 2: Lost tasks in worker mailboxes on crash
 
   Task distribution can easily be done using zmqs unique ability to connect more 
   than one downstream per socket. Each downstream socket/worker has its own mailbox. 
@@ -32,14 +32,14 @@ The subject is task distribution in a classic multi worker central job-distribut
     from this mailbox. A background thread does the transport between mailboxes. You cannot know 
     by design in which mailbox your message currently is.
 
-Problem 3: Adding workers while processing many jobs
+### Problem 3: Adding workers while processing many jobs
 
   Imagine a PUSH - PULL zmq setup. 1 PUSH sockets sends 1000 small messages to 2 PULL sockets. 
   Each message takes 1 second to process. After 10 seconds you are connecting a 3rd worker. But 
   all 1000 messages are already send to one of the workers mailboxes. Bad. Your new worker is 
   waiting for jobs while the other two have to much.
 
-## Idea: Let the workers pull work from the server. 
+### Idea: Let the workers pull work from the server. 
 
   When workers are pulling the servers for work there is no worker side queue of unprocessed,
   lost-in-case-of-crash or present-in-mailbox where other workers do not have anything to do.
