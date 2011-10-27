@@ -6,6 +6,10 @@ require 'rz/worker'
 class Worker
   include RZ::Worker
 
+  hook :before_run do 
+    puts "cool"
+  end
+
   def initialize
     initialize_worker(
       :response_address   => 'tcp://127.0.0.1:4001',
