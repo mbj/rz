@@ -2,9 +2,15 @@
 $: << File.expand_path(File.join(File.dirname(__FILE__),'..','lib'))
 
 require 'rz/service'
+require 'rz/service/statistics'
 
 class Service
   include RZ::Service
+  include RZ::Service::Statistics
+
+  hook :before_run do 
+    puts "hello from hook"
+  end
 
   def initialize
     initialize_service(

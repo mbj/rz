@@ -1,5 +1,6 @@
 require 'json' 
 require 'rz/context'
+require 'rz/hooking'
 
 module RZ
   module Service
@@ -11,27 +12,24 @@ module RZ
       request_socket_b
       self.active_req_socket = request_socket_a
       self.blocking_socket   = frontend
-      @loop_start = Time.now
 
-      reset_stats
+      run_hook :before_loop
+
       loop do
-        @loops += 1
+        run_hook :loop_start
         ready = ZMQ.select([response_socket,blocking_socket],nil,nil,1)
         if ready
           process_ready ready.first
         else
           noop
         end
-        reset_stats if (@loops % 100).zero?
-        print_stats
+        run_hook :loop_end
       end
     end
 
   private
 
     attr_reader :identity,:frontend_address,:response_address,:request_address_a,:request_address_b
-
-    attr_reader :requests,:responses,:noops,:loops
 
     attr_reader :active_req_socket, :blocking_socket
     private :active_req_socket, :blocking_socket
@@ -42,8 +40,6 @@ module RZ
       @request_address_b     = options.fetch(:request_address_b)   { raise ArgumentError,'missing :request_address_b'  }
       @response_address      = options.fetch(:response_address) { raise ArgumentError,'missing :response_address'  }
       @identity              = options.fetch(:identity,nil)
-
-      @loops = @noops = @requests = @responses = 0
     end
 
     def active_req_socket=(socket)
@@ -69,31 +65,6 @@ module RZ
       end
     end
 
-    def reset_stats
-      @short_time = Time.now
-      @short_count = (requests + responses)
-    end
-
-    def print_stats
-      $stderr.puts "requests: %03d responses: %03d noops: %03d messages/s %0.2f messages/s short %0.2f" % [requests,responses,noops,messages_per_second,short_messages_per_second]
-      self
-    end
-
-    def messages
-      requests + responses
-    end
-
-    def messages_per_second
-      messages / (Time.now - @loop_start)
-    end
-
-    def short_messages
-      messages - @short_count
-    end
-
-    def short_messages_per_second
-      short_messages / (Time.now - @short_time)
-    end
 
     def process_ready(ready)
       ready.each do |socket|
@@ -102,7 +73,7 @@ module RZ
           # Pusing response to client
           addr,body = zmq_split zmq_recv(response_socket)
           zmq_send frontend,body
-          @responses+=1
+          run_hook :response
         when frontend
           # Find worker for job
           message = zmq_recv(active_req_socket,ZMQ::NOBLOCK)
@@ -110,7 +81,7 @@ module RZ
             job_addr,job_body = zmq_split zmq_recv(frontend)
             worker_addr,worker_body = zmq_split message
             zmq_send active_req_socket,worker_addr + job_addr + DELIM + job_body
-            @requests+=1
+            run_hook :request
           else
             self.blocking_socket = active_req_socket
           end
@@ -121,7 +92,7 @@ module RZ
             worker_addr,worker_body = zmq_split zmq_recv(active_req_socket)
             job_addr,job_body = zmq_split message
             zmq_send active_req_socket,worker_addr + job_addr + DELIM + job_body
-            @requests+=1
+            run_hook :request
           else
             self.blocking_socket = frontend
           end
@@ -129,6 +100,7 @@ module RZ
           raise
         end
       end
+      self
     end
 
     def noop
@@ -139,7 +111,8 @@ module RZ
         zmq_send(active_req_socket,addr + DELIM + NOOP)
       end
       switch_active_req_socket
-      @noops += 1
+      run_hook :noop
+      self
     end
 
     def request_socket_a
@@ -168,6 +141,10 @@ module RZ
         socket.setsockopt(ZMQ::IDENTITY,"#{identity}.frontend") if identity
         socket.bind frontend_address
       end
+    end
+
+    def self.included(base)
+      base.send :include,Hooking
     end
   end
 end

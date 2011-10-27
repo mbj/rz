@@ -1,5 +1,6 @@
 require 'json'
 require 'rz/context'
+require 'rz/hooking'
 
 module RZ
   class JobExecutionError < RuntimeError
@@ -151,38 +152,11 @@ module RZ
           socket.connect response_address
         end
       end
-   
-      def run_hook(name)
-        self.class.hooks[name].each do |hook|
-          case hook
-          when Proc
-            instance_exec &hook
-          when Symbol
-            send hook
-          else
-            raise
-          end
-        end
-      end
     end
 
     module ClassMethods
       def registry
         @registry ||= {}
-      end
-
-      def hook(name,method_name=nil,&block)
-        raise ArgumentError,"provide method name or block not both" if method_name and block
-        raise ArgumentError,"provide method name or block" unless method_name or block
-        hooks_for(name) << (method_name || block)
-      end
-    
-      def hooks
-        @hooks ||= {}
-      end
-    
-      def hooks_for(name)
-        hooks[name] ||= []
       end
 
     private
@@ -200,6 +174,7 @@ module RZ
     def self.included(base)
       base.send :extend,ClassMethods
       base.send :include,InstanceMethods
+      base.send :include,Hooking
       base.send :register,:echo do |*arguments|
         arguments
       end

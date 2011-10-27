@@ -7,7 +7,7 @@ class Worker
   include RZ::Worker
 
   hook :before_run do 
-    puts "cool"
+    puts "hello from hook"
   end
 
   def initialize
