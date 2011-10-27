@@ -2,6 +2,7 @@
 
 Simplifies writing job servers in ruby
 And it is totally disfunctional ATM!
+It is a SPIKE.
 
 ## Installation
 
