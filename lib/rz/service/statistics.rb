@@ -8,7 +8,7 @@ module RZ
       end
 
       def loop_end
-        reset_stats if (@s_loops % 100).zero?
+        reset_short_stats if (@s_loops % 100).zero?
         print_stats
       end
 

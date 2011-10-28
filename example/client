@@ -23,7 +23,7 @@ end
 Client.new.run do |client|
   puts 'executing 1000 asynchronous requests'
 
-  5.times do |i|
+  1000.times do |i|
     client.request :eval, "sleep 1; #{i}"
   end
 
@@ -31,7 +31,7 @@ Client.new.run do |client|
 
   a = Time.now
 
-  5.times do |i|
+  1000.times do |i|
     x = client.receive :timeout => 1000
     p "x: #{x} i: #{i}"
   end
