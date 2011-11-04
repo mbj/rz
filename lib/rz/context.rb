@@ -30,7 +30,13 @@ module RZ
     end
 
     def zmq_cleanup
-      zmq_sockets.each { |socket| zmq_socket_close(socket) }
+      zmq_named_sockets.each_key do |name|
+        zmq_named_socket_close name
+      end
+      zmq_sockets.each do |socket|
+        zmq_socket_close socket
+      end
+      raise unless zmq_sockets.length.zero?
       zmq_context.close 
       @zmq_named_sockets = @zmq_context = @zmq_sockets = nil
     end
@@ -87,10 +93,10 @@ module RZ
 
     def zmq_named_socket(name,type)
       zmq_named_sockets[name] ||= begin
-        socket = zmq_socket(type)
-        yield socket if block_given?
-        socket
-      end
+                                    socket = zmq_socket(type)
+                                    yield socket if block_given?
+                                    socket
+                                  end
     end
 
     def zmq_named_socket_close(name)
@@ -106,7 +112,9 @@ module RZ
     end
 
     def zmq_socket(type)
+      p type
       socket = zmq_context.socket(type)
+      p socket
       zmq_sockets << socket
       socket
     end
