@@ -25,6 +25,11 @@ module RZ
         end
         run_hook :loop_end
       end
+    rescue Interrupt
+      run_hook :interrupted
+      raise
+    ensure
+      zmq_cleanup
     end
 
   private
