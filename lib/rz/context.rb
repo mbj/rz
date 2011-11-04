@@ -112,9 +112,7 @@ module RZ
     end
 
     def zmq_socket(type)
-      p type
       socket = zmq_context.socket(type)
-      p socket
       zmq_sockets << socket
       socket
     end
