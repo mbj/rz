@@ -1,4 +1,4 @@
-# Ruby ZMQ job server with truly pulling workers.
+# Ruby ZeroMQ based job server with truly pulling workers.
 
 
 This project is primarily a playground to build a ruby job server that solves some of my 
@@ -6,7 +6,7 @@ messaging problems using ZMQ primitives.
 
 Currently the subject is task distribution in a classic multi worker central job-distributor setup.
 
-[ZMQ](http://zeromq.org) is a messaging framework not a out-of-the-box messaging solution. 
+[ZeroMQ](http://zeromq.org) is a messaging framework, not a out-of-the-box messaging solution. 
 So please keep in mind my "Problems" below are not problems of ZMQ itself. 
 
 Maybe this all is solved just by using rabbbitMQ and friends. But it makes more fun to wrap my head around these problems for myself.
