@@ -91,13 +91,10 @@ module RZ
           when true
             send(name,*arguments)
           end
+        rescue Interrupt, SignalException
+          raise
         rescue Exception => exception
-          # Reraise interrupts unmodified to make sure we do not refuse to stopwe do not refuse to stop
-          if exception.kind_of? Interrupt
-            raise
-          else
-            raise JobExecutionError.new(exception,job)
-          end
+          raise JobExecutionError.new(exception,job)
         end
       end
    

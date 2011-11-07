@@ -16,6 +16,10 @@ describe RZ::Worker,'#dispatch_job' do
       register :test_job do
         'result value'
       end
+
+      register :signal_exception do
+        raise SignalException.new('SIGTERM')
+      end
     end.new
   end
 
@@ -64,6 +68,14 @@ describe RZ::Worker,'#dispatch_job' do
 
     it 'should raise Interrupt' do
       expect { subject }.to raise_error(Interrupt)
+    end
+  end
+
+  context 'when job raises an SignalException' do
+    let(:job) { { 'name' => 'signal_exception', 'arguments' => [] } }
+
+    it 'should raise SignalException' do
+      expect { subject }.to raise_error(SignalException)
     end
   end
 end
