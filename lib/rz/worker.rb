@@ -82,7 +82,7 @@ module RZ
           raise ArgumentError,"job #{name.inspect} is not registred"
         end
    
-        info { "executing: #{name}, #{arguments.inspect}" }
+        debug { "executing: #{name}, #{arguments.inspect}" }
    
         begin
           case block
