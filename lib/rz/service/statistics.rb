@@ -18,7 +18,7 @@ module RZ
 
         mss = now == old_time ? 0 : (messages - old_messages) / (now - old_time)
 
-        $stderr.puts "msg: req: %03d rep: %03d noop: %03d miss: %03d m/s: %0.2f ms/s: %0.2f" % [@s_requests,@s_responses,@s_noops,@s_requests - @s_requests,ms,mss]
+        $stderr.puts "msg: req: %03d rep: %03d noop: %03d miss: %03d m/s: %0.2f ms/s: %0.2f" % [@s_requests,@s_responses,@s_noops,@s_requests - @s_responses,ms,mss]
         self
       end
 
