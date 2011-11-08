@@ -14,29 +14,35 @@ class Client
 
   def initialize
     initialize_client(
-      :service_address => 'tcp://127.0.0.1:4000', 
+      :services => {
+        :service_a => "tcp://127.0.0.1:4000",
+        :service_b => "tcp://127.0.0.1:4010",
+        :service_c => "tcp://127.0.0.1:4020"
+      }, 
       :identity => "client.#{Process.pid}"
     )
   end
 end
 
 Client.new.run do |client|
-  puts 'executing 1000 asynchronous requests'
+  %w(service_a service_b service_c).map(&:to_sym).each do |service|
+    puts 'executing 100 asynchronous requests'
 
-  1000.times do |i|
-    client.request :eval, "sleep 1; #{i}"
+    100.times do |i|
+      client.request service, { :name => :eval, :arguments => ["sleep 1; #{i}"] }
+    end
+
+    puts 'receiving answers'
+
+    a = Time.now
+
+    100.times do |i|
+      x = client.receive service, :timeout => 100
+      p "x: #{x} i: #{i}"
+    end
+
+    b = Time.now
+
+    puts "did work in: #{b-a} seconds"
   end
-
-  puts 'receiving answers'
-
-  a = Time.now
-
-  1000.times do |i|
-    x = client.receive :timeout => 1000
-    p "x: #{x} i: #{i}"
-  end
-
-   b = Time.now
-
-   puts "did work in: #{b-a} seconds"
 end
