@@ -1,32 +1,13 @@
 #!/usr/bin/env ruby
-$: << File.expand_path(File.join(File.dirname(__FILE__),'..','lib'))
 
-require 'rz/client'
+require './example'
 
-class Client
-  include RZ::Client
+options = [:a,:b:c].map { |name| [name,Example.addresses.fetch(:name).fetch(:frontend_address)] }.to_hash
+options[:identity] = "client-#{Process.pid}"
 
-  def run
-    yield self
-  ensure
-    zmq_cleanup
-  end
-
-  def initialize
-    initialize_client(
-      :services => {
-        :service_a => "tcp://127.0.0.1:4000",
-        :service_b => "tcp://127.0.0.1:4010",
-        :service_c => "tcp://127.0.0.1:4020"
-      }, 
-      :identity => "client.#{Process.pid}"
-    )
-  end
-end
-
-Client.new.run do |client|
-  %w(service_a service_b service_c).map(&:to_sym).each do |service|
-    puts 'executing 100 asynchronous requests'
+Client.new(options).run do |client|
+  options.keys.each do |service|
+    puts "executing 100 asynchronous requests to service #{service}"
 
     100.times do |i|
       client.request service, { :name => :eval, :arguments => ["sleep 1; #{i}"], :job_id => i}
