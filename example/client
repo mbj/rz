@@ -29,7 +29,7 @@ Client.new.run do |client|
     puts 'executing 100 asynchronous requests'
 
     100.times do |i|
-      client.request service, { :name => :eval, :arguments => ["sleep 1; #{i}"] }
+      client.request service, { :name => :eval, :arguments => ["sleep 1; #{i}"], :job_id => i}
     end
 
     puts 'receiving answers'
@@ -38,7 +38,7 @@ Client.new.run do |client|
 
     100.times do |i|
       x = client.receive service, :timeout => 100
-      p "x: #{x} i: #{i}"
+      puts "x: #{x} i: #{i}"
     end
 
     b = Time.now

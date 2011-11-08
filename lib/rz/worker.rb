@@ -103,7 +103,9 @@ module RZ
         job = JSON.load(job.first)
         begin
           result = dispatch_job(job)
-          result = JSON.dump(:result => result,:job_id => job['job_id'])
+	  job.delete 'arguments'
+	  job.merge!  'result' => result
+          result = JSON.dump job
           zmq_send(response_socket,DELIM + client_address + DELIM + [result])
         rescue JobExecutionError => job_execution_exception
           exception = job_execution_exception.original_exception
