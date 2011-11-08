@@ -13,23 +13,12 @@ module RZ
 
     def receive(options={})
       timeout = options.fetch(:timeout,1)
-      expected_job_id = options[:job_id]
 
       ready = ZMQ.select([service_socket],nil,nil,timeout)
       return unless ready
       body = zmq_split(zmq_recv(service_socket)).last
       raise unless body.length == 1
-
-      result = JSON.load(body.first)
-
-      result_job_id = result['job_id']
-
-      unless result_job_id == expected_job_id
-        warn { "expected answer for job #{expected_job_id.inspect} but got answer for: #{result_job_id.inspect}" }
-        nil
-      else
-        result.fetch('result')
-      end
+      JSON.load(body.first)
     end
 
   private
