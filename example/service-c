@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+$: << File.expand_path(File.join(File.dirname(__FILE__),'..','lib'))
+
+require 'rz/service'
+require 'rz/service/statistics'
+
+class Service
+  include RZ::Service
+  include RZ::Service::Statistics
+
+  hook :before_run do 
+    puts "hello from hook"
+  end
+
+  def initialize
+    initialize_service(
+      :frontend_address    => 'tcp://127.0.0.1:4020',
+      :response_address    => 'tcp://127.0.0.1:4021',
+      :request_address_a   => 'tcp://127.0.0.1:4022',
+      :request_address_b   => 'tcp://127.0.0.1:4023',
+      :identity            => 'service-c'
+    )
+  end
+end
+
+Service.new.run
