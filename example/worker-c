@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+$: << File.expand_path(File.join(File.dirname(__FILE__),'..','lib'))
+
+require 'rz/worker'
+
+class Worker
+  include RZ::Worker
+
+  hook :before_run do 
+    puts "hello from hook"
+  end
+
+  def initialize
+    initialize_worker(
+      :response_address   => 'tcp://127.0.0.1:4021',
+      :request_address_a => 'tcp://127.0.0.1:4022', 
+      :request_address_b => 'tcp://127.0.0.1:4023', 
+      :identity => "worker#{Process.pid}"
+    )
+  end
+end
+
+Worker.send :register,:eval do |string|
+  eval string
+end
+
+Worker.new.run
