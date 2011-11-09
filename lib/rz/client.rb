@@ -31,8 +31,8 @@ module RZ
     #   )
 
     def initialize_client(options)
-      @services = options.fetch(:services) { raise ArgumentError,'missing :service_address in options' }
-      @identity        = options.fetch(:identity,nil)
+      @services = options.fetch(:services) { raise ArgumentError,'missing :services in options' }
+      @identity = options.fetch(:identity,nil)
     end
 
     def service_socket(name)
