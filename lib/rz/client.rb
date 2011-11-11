@@ -5,7 +5,7 @@ module RZ
   module Client
     include Context
 
-    attr_reader :services,:identity
+    attr_reader :identity
 
     def request(name,job)
       zmq_send(service_socket(name),['',JSON.dump(job)])
@@ -19,6 +19,11 @@ module RZ
       body = zmq_split(zmq_recv(service_socket(name))).last
       raise unless body.length == 1
       JSON.load(body.first)
+    end
+
+    def services
+      return @services if defined? @services
+      raise 'You forgot to call initialize_client!'
     end
 
   private
