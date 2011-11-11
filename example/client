@@ -2,14 +2,19 @@
 
 require File.expand_path('../example',__FILE__)
 
-options = [:a,:b,:c].map { |name| [name,Example.addresses.fetch(:name).fetch(:frontend_address)] }.to_hash
-options[:identity] = "client-#{Process.pid}"
+services = Hash[[:a,:b,:c].map { |name| [name,Example.addresses.fetch(name).fetch(:frontend_address)] }]
+
+options = {
+  :services => services,
+  :identity => "client-#{Process.pid}"
+}
 
 Client.new(options).run do |client|
-  options.keys.each do |service|
-    puts "executing 100 asynchronous requests to service #{service}"
+  services.keys.each do |service|
+    count = 10
+    puts "executing #{count} asynchronous requests to service #{service}"
 
-    100.times do |i|
+    count.times do |i|
       client.request service, { :name => :eval, :arguments => ["sleep 1; #{i}"], :job_id => i}
     end
 
@@ -17,7 +22,7 @@ Client.new(options).run do |client|
 
     a = Time.now
 
-    100.times do |i|
+    count.times do |i|
       x = client.receive service, :timeout => 100
       puts "x: #{x} i: #{i}"
     end
