@@ -118,7 +118,7 @@ module RZ
       end
    
       def pull_job
-        zmq_send active_request_socket,DELIM + HALLO
+        zmq_send active_request_socket,DELIM
         ready = ZMQ.select([active_request_socket],nil,nil,10)
         return unless ready
         client_address,job_body =  zmq_split(zmq_recv(active_request_socket))

@@ -18,9 +18,10 @@ Client.new(options).run do |client|
       client.request service, { :name => :eval, :arguments => ["sleep 1; #{i}"], :job_id => i}
     end
 
-    puts 'receiving answers'
 
     a = Time.now
+
+    puts "receiving answers from service #{service}"
 
     count.times do |i|
       x = client.receive service, :timeout => 100

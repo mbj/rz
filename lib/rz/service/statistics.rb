@@ -8,7 +8,7 @@ module RZ
         self
       end
 
-      def loop_end
+      def count_loop_end
         now = Time.now
         messages = @s_requests + @s_responses
         ms = messages / (now - @s_loop_start_time)
@@ -24,33 +24,33 @@ module RZ
 
       attr_reader :short_message_count,:short_time
 
-      def noop
+      def count_noop
         @s_noops +=1
         self
       end
 
-      def request
+      def count_request
         @s_requests +=1
         self
       end
 
-      def response
+      def count_response
         @s_responses +=1
         self
       end
 
-      def loop_start
+      def count_loop_start
         @s_loops += 1
         self
       end
 
       def self.included(base)
         base.send :hook,:before_loop
-        base.send :hook,:loop_start
-        base.send :hook,:loop_end
-        base.send :hook,:noop
-        base.send :hook,:response
-        base.send :hook,:request
+        base.send :hook,:loop_start, :count_loop_start
+        base.send :hook,:loop_end,   :count_loop_end
+        base.send :hook,:noop,       :count_noop
+        base.send :hook,:response,   :count_response
+        base.send :hook,:request,    :count_request
       end
     end
   end

@@ -3,7 +3,6 @@ require 'zmq'
 module RZ
   module Context
 
-  HALLO = ['HALLO'].freeze
   NOOP  = ['NOOP'].freeze
   DELIM = [''].freeze
 
