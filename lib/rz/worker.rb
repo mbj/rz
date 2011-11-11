@@ -105,7 +105,7 @@ module RZ
         begin
           result = dispatch_job(job)
 	        job.delete 'arguments'
-	        job.merge!  'result' => result
+	        job.merge! 'result' => result
           result = JSON.dump job
           zmq_send(response_socket,DELIM + client_address + DELIM + [result])
         rescue JobExecutionError => job_execution_exception
@@ -122,6 +122,7 @@ module RZ
         ready = ZMQ.select([active_request_socket],nil,nil,10)
         return unless ready
         client_address,job_body =  zmq_split(zmq_recv(active_request_socket))
+        p job_body
         if job_body.first == 'NOOP'
           :noop
         else

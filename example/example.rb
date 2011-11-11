@@ -31,10 +31,6 @@ class Service
   include RZ::Service
   include RZ::Service::Statistics
 
-  hook :before_run do 
-    puts 'hello from hook'
-  end
-
   # overriding log noop log, this interface needs to improve
   def log(level)
     puts yield
