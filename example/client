@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require './example'
+require File.expand_path('../example',__FILE__)
 
 options = [:a,:b:c].map { |name| [name,Example.addresses.fetch(:name).fetch(:frontend_address)] }.to_hash
 options[:identity] = "client-#{Process.pid}"
