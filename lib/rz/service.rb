@@ -9,7 +9,9 @@ module RZ
     def run
       # initializing sockets
       frontend
+      request_socket_a
       request_socket_b
+
       self.active_req_socket = request_socket_a
       self.blocking_socket   = frontend
 
@@ -17,9 +19,9 @@ module RZ
 
       loop do
         run_hook :loop_start
-        ready = ZMQ.select([response_socket,blocking_socket],nil,nil,1)
+        ready = ZMQ.select([response_socket,frontent,active_req_socket],nil,nil,1)
         if ready
-          process_ready ready.first
+          ready.each { |socket| process_ready socket }
         else
           noop
         end
@@ -37,13 +39,13 @@ module RZ
     attr_reader :identity,:frontend_address,:response_address,:request_address_a,:request_address_b
 
     attr_reader :active_req_socket, :blocking_socket
-    private :active_req_socket, :blocking_socket
+    private     :active_req_socket, :blocking_socket
 
     def initialize_service(options)
-      @frontend_address      = options.fetch(:frontend_address)    { raise ArgumentError,'missing :frontend_address' }
-      @request_address_a     = options.fetch(:request_address_a)   { raise ArgumentError,'missing :request_address_a'  }
-      @request_address_b     = options.fetch(:request_address_b)   { raise ArgumentError,'missing :request_address_b'  }
-      @response_address      = options.fetch(:response_address) { raise ArgumentError,'missing :response_address'  }
+      @frontend_address      = options.fetch(:frontend_address)    { raise ArgumentError,'missing :frontend_address'  }
+      @request_address_a     = options.fetch(:request_address_a)   { raise ArgumentError,'missing :request_address_a' }
+      @request_address_b     = options.fetch(:request_address_b)   { raise ArgumentError,'missing :request_address_b' }
+      @response_address      = options.fetch(:response_address)    { raise ArgumentError,'missing :response_address'  }
       @identity              = options.fetch(:identity,nil)
     end
 
@@ -70,16 +72,17 @@ module RZ
       end
     end
 
-
     def process_ready(ready)
       ready.each do |socket|
         case socket
         when response_socket
+          p :response
           # Pusing response to client
           addr,body = zmq_split zmq_recv(response_socket)
           zmq_send frontend,body
           run_hook :response
         when frontend
+          p :frontend
           # Find worker for job
           message = zmq_recv(active_req_socket,ZMQ::NOBLOCK)
           if message
@@ -91,6 +94,7 @@ module RZ
             self.blocking_socket = active_req_socket
           end
         when active_req_socket
+          p :active_req_socket
           # Find job for worker
           message = zmq_recv frontend,ZMQ::NOBLOCK
           if message
