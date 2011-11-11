@@ -122,7 +122,6 @@ module RZ
         ready = ZMQ.select([active_request_socket],nil,nil,10)
         return unless ready
         client_address,job_body =  zmq_split(zmq_recv(active_request_socket))
-        p job_body
         if job_body.first == 'NOOP'
           :noop
         else
