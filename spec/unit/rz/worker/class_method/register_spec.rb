@@ -22,11 +22,11 @@ describe RZ::Worker, '.register' do
   context 'when block given' do
     let(:block) { proc {} }
 
-    its(:registry) { should have_key(name.to_s) }
+    its(:requests) { should have_key(name.to_s) }
   end
 
   context 'when no block given' do
-    its(:registry) { should have_key(name.to_s) }
+    its(:requests) { should have_key(name.to_s) }
   end
 
   context 'when name is already registred' do

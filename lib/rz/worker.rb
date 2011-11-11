@@ -23,6 +23,7 @@ module RZ
    
       def run
         run_hook :before_run
+        request_socket_a
         request_socket_b
         self.active_request_socket=request_socket_a
         loop do
@@ -76,7 +77,7 @@ module RZ
       def dispatch_job(job)
         name      = job.fetch('name')      { raise ArgumentError,'missing "name" in options'      }
         arguments = job.fetch('arguments') { raise ArgumentError,'missing "arguments" in options' }
-        block = self.class.registry[name]
+        block = self.class.requests[name]
    
         unless block
           raise ArgumentError,"job #{name.inspect} is not registred"
@@ -103,8 +104,8 @@ module RZ
         job = JSON.load(job.first)
         begin
           result = dispatch_job(job)
-	  job.delete 'arguments'
-	  job.merge!  'result' => result
+	        job.delete 'arguments'
+	        job.merge!  'result' => result
           result = JSON.dump job
           zmq_send(response_socket,DELIM + client_address + DELIM + [result])
         rescue JobExecutionError => job_execution_exception
@@ -154,18 +155,18 @@ module RZ
     end
 
     module ClassMethods
-      def registry
-        @registry ||= {}
+      def requests
+        @requests ||= {}
       end
 
     private
 
       def register(name,&block)
         name = name.to_s
-        if registry.key? name
+        if requests.key? name
           raise ArgumentError,"#{name.inspect} is already registred"
         end
-        registry[name] = block || true
+        requests[name] = block || true
         self
       end
     end

@@ -16,10 +16,6 @@ module RZ
     end
 
     module ClassMethods
-      def registry
-        @registry ||= {}
-      end
-
       def hook(name,method_name=nil,&block)
         method_name ||= name unless block
         raise ArgumentError,'provide method name or block not both' if method_name and block
