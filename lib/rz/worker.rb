@@ -102,19 +102,19 @@ module RZ
       def process_job(client_address,job)
         raise unless job.length == 1
         job = JSON.load(job.first)
-        begin
+        result = begin
           result = dispatch_job(job)
 	        job.delete 'arguments'
-	        job.merge! 'result' => result
-          result = JSON.dump job
-          zmq_send(response_socket,DELIM + client_address + DELIM + [result])
+	        job.merge(:status => :success,:result => result)
         rescue JobExecutionError => job_execution_exception
           exception = job_execution_exception.original_exception
           error { "exception captured while dispatching: #{exception.class.name} #{exception.message}" }
           exception.backtrace.each do |trace|
             error { trace }
           end
+          job.merge(:status => :error,:error => { :type => exception.class.name, :message => exception.message,:backtrace => exception.backtrace })
         end
+        zmq_send(response_socket,DELIM + client_address + DELIM + [JSON.dump(result)])
       end
    
       def pull_job
@@ -175,8 +175,8 @@ module RZ
       base.send :extend,ClassMethods
       base.send :include,InstanceMethods
       base.send :include,Hooking
-      base.send :register,:echo do |*arguments|
-        arguments
+      base.send :register,:echo do |value|
+        value
       end
     end
   end
