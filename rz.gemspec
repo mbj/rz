@@ -16,5 +16,5 @@ Gem::Specification.new do |s|
   s.require_paths    = %w(lib)
   s.extra_rdoc_files = %w(LICENSE README.rdoc TODO)
 
-  s.add_runtime_dependency('zmq',         ['~> 1.4.0'])
+  s.add_runtime_dependency('zmq',         ['~> 2.1.4'])
 end
