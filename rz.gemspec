@@ -1,23 +1,26 @@
 # -*- encoding: utf-8 -*-
-lib = File.expand_path('../lib/', __FILE__)
-$:.unshift lib unless $:.include?(lib)
- 
-require 'rz/version'
- 
+require File.expand_path('../lib/rz/version', __FILE__)
+
 Gem::Specification.new do |s|
-  s.name        = 'rz'
-  s.version     = RZ::VERSION
-  s.platform    = Gem::Platform::RUBY
-  s.authors     = 'Markus Schirp'
-  s.email       = 'mbj@seonic.net'
-  s.homepage    = 'http://github.com/mbj/rz'
-  s.summary     = 'jobserver build on top of zmq'
- 
-  s.required_rubygems_version = '>= 1.3.6'
- 
-  s.add_runtime_dependency 'zmq', '~> 2.1.4'
-  s.add_development_dependency 'rspec'
- 
-  s.files        = Dir.glob('lib/**/*') + %w(LICENSE VERSION README.md)
-  s.require_path = 'lib'
+  s.name = 'rz'
+  s.version = RZ::VERSION
+
+  s.authors  = ['Markus Schirp']
+  s.email    = 'mbj@seonic.net'
+  s.date     = '2011-11-16'
+  s.summary  = 'zmq jobserver'
+  s.homepage = 'http://github.com/mbj/rz'
+
+  s.files            = `git ls-files`.split("\n")
+  s.test_files       = `git ls-files -- {test,spec,features}/*`.split("\n")
+  s.require_paths    = [ 'lib' ]
+  s.extra_rdoc_files = [ 'LICENSE', 'README.rdoc', 'TODO' ]
+
+  s.add_runtime_dependency(%q<zmq>,         ["~> 1.4.0"])
+  s.add_runtime_dependency(%q<dm-core>,       ["~> 1.2.0.rc2"])
+  s.add_runtime_dependency(%q<dm-migrations>, ["~> 1.2.0.rc2"])
+  s.add_runtime_dependency(%q<dm-aggregates>, ["~> 1.2.0.rc2"])
+
+  s.add_development_dependency(%q<rake>,      ["~> 0.8.7"])
+  s.add_development_dependency(%q<rspec>,     ["~> 1.3.1"])
 end
