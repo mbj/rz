@@ -13,14 +13,8 @@ Gem::Specification.new do |s|
 
   s.files            = `git ls-files`.split("\n")
   s.test_files       = `git ls-files -- {test,spec,features}/*`.split("\n")
-  s.require_paths    = [ 'lib' ]
-  s.extra_rdoc_files = [ 'LICENSE', 'README.rdoc', 'TODO' ]
+  s.require_paths    = %w(lib)
+  s.extra_rdoc_files = %w(LICENSE README.rdoc TODO)
 
-  s.add_runtime_dependency(%q<zmq>,         ["~> 1.4.0"])
-  s.add_runtime_dependency(%q<dm-core>,       ["~> 1.2.0.rc2"])
-  s.add_runtime_dependency(%q<dm-migrations>, ["~> 1.2.0.rc2"])
-  s.add_runtime_dependency(%q<dm-aggregates>, ["~> 1.2.0.rc2"])
-
-  s.add_development_dependency(%q<rake>,      ["~> 0.8.7"])
-  s.add_development_dependency(%q<rspec>,     ["~> 1.3.1"])
+  s.add_runtime_dependency('zmq',         ['~> 1.4.0'])
 end
