@@ -7,6 +7,8 @@ module RZ
     include Context
 
     def run
+      run_hook :before_run
+
       # initializing sockets
       frontend
       request_socket_b
