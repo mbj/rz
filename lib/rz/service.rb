@@ -115,6 +115,10 @@ module RZ
         addr,body = zmq_split message
         zmq_send(active_req_socket,addr + DELIM + NOOP)
       end
+      loop do
+        message = zmq_recv frontend,ZMQ::NOBLOCK
+        break unless message
+      end
       switch_active_req_socket
       run_hook :noop
       self
