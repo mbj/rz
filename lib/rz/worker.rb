@@ -50,10 +50,10 @@ module RZ
     private
    
       def initialize_worker(options)
-        @response_address = options.fetch(:response_address) { raise ArgumentError,'missing :response_address in options' }
+        @response_address  = options.fetch(:response_address) { raise ArgumentError,'missing :response_address in options' }
         @request_address_a = options.fetch(:request_address_a) { raise ArgumentError,'missing :request_address_a in options' }
         @request_address_b = options.fetch(:request_address_b) { raise ArgumentError,'missing :request_address_b in options' }
-        @identity     = options.fetch(:identity,nil)
+        @identity          = options.fetch(:identity,nil)
       end
    
       def active_request_socket
@@ -105,7 +105,7 @@ module RZ
         result = begin
           result = dispatch_job(job)
 	        job.delete 'arguments'
-	        job.merge(:status => :success,:result => result)
+	        job.merge(:status => :success,:result => result,:worker_identity => identity)
         rescue JobExecutionError => job_execution_exception
           exception = job_execution_exception.original_exception
           error { "exception captured while dispatching: #{exception.class.name} #{exception.message}" }
