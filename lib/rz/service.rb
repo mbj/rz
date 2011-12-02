@@ -120,6 +120,7 @@ module RZ
       loop do
         message = zmq_recv frontend,ZMQ::NOBLOCK
         break unless message
+        run_hook :drop
       end
       switch_active_req_socket
       run_hook :noop

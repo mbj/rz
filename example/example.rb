@@ -63,22 +63,22 @@ module Example
   def self.addresses
     { 
       :a => {
-        :response_address  => 'tcp://127.0.0.1:4001',
-        :request_address_a => 'tcp://127.0.0.1:4002',
-        :request_address_b => 'tcp://127.0.0.1:4003',
-        :frontend_address  => 'tcp://127.0.0.1:4000'
+        :response_address  => 'tcp://127.0.0.1:8001',
+        :request_address_a => 'tcp://127.0.0.1:8002',
+        :request_address_b => 'tcp://127.0.0.1:8003',
+        :frontend_address  => 'tcp://127.0.0.1:8000'
       },
       :b => {
-        :response_address  => 'tcp://127.0.0.1:4010',
-        :request_address_a => 'tcp://127.0.0.1:4020',
-        :request_address_b => 'tcp://127.0.0.1:4030',
-        :frontend_address  => 'tcp://127.0.0.1:4000'
+        :response_address  => 'tcp://127.0.0.1:8010',
+        :request_address_a => 'tcp://127.0.0.1:8020',
+        :request_address_b => 'tcp://127.0.0.1:8030',
+        :frontend_address  => 'tcp://127.0.0.1:8000'
       },
       :c => {
-        :response_address  => 'tcp://127.0.0.1:4100',
-        :request_address_a => 'tcp://127.0.0.1:4200',
-        :request_address_b => 'tcp://127.0.0.1:4300',
-        :frontend_address  => 'tcp://127.0.0.1:4000'
+        :response_address  => 'tcp://127.0.0.1:8100',
+        :request_address_a => 'tcp://127.0.0.1:8200',
+        :request_address_b => 'tcp://127.0.0.1:8300',
+        :frontend_address  => 'tcp://127.0.0.1:8000'
       },
     }
   end
