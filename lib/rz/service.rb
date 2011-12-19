@@ -38,7 +38,7 @@ module RZ
     end
 
     def open_sockets
-      debug { "opening sockets" }
+      rz_debug { "opening sockets" }
       %w(response_socket request_socket_a request_socket_b frontend_socket).
         each do |socket_name|
           socket = rz_socket(ZMQ::ROUTER)

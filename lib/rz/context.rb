@@ -38,17 +38,17 @@ module RZ
 
     def rz_select(sockets,timeout)
       identities = sockets.map { |socket| socket.getsockopt(ZMQ::IDENTITY) }
-      debug { "select: #{identities}, #{timeout}" }
+      rz_debug { "select: #{identities}, #{timeout}" }
 
       ready = ZMQ.select(sockets,[],[],timeout)
       unless ready
-        debug { "select done nil" }
+        rz_debug { "select done nil" }
         return
       end
 
       ready = ready.first
 
-      debug { "select done #{identities}" }
+      rz_debug { "select done #{identities}" }
 
       ready
     end
@@ -120,7 +120,7 @@ module RZ
     #
     def rz_recv(socket,flags=0)
       identity = socket.getsockopt(ZMQ::IDENTITY)
-      debug { "#{identity} recv message" }
+      rz_debug { "#{identity} recv message" }
       message = []
       loop do
         part = socket.recv(flags)
@@ -131,10 +131,10 @@ module RZ
       end
       
       if message.empty?
-        debug { "#{identity} recved no message" }
+        rz_debug { "#{identity} recved no message" }
         nil
       else
-        debug { "#{identity} recved message: #{message.inspect}" }
+        rz_debug { "#{identity} recved message: #{message.inspect}" }
         message
       end
     end
@@ -151,12 +151,12 @@ module RZ
     #
     def rz_send(socket,message)
       identity = socket.getsockopt(ZMQ::IDENTITY)
-      debug { "#{identity} send message: #{message.inspect}" }
+      rz_debug { "#{identity} send message: #{message.inspect}" }
       max = message.length-1
       message.each_with_index do |part,idx|
         socket.send(part,idx == max ? 0 : ZMQ::SNDMORE) || raise
       end
-      debug { "#{identity} send finished" }
+      rz_debug { "#{identity} send finished" }
 
       self
     end
@@ -176,9 +176,9 @@ module RZ
     #
     def rz_socket_close(socket)
       identity = socket.getsockopt(ZMQ::IDENTITY)
-      debug { "closing socket: #{identity}" }
+      rz_debug { "closing socket: #{identity}" }
       socket.close
-      debug { "closed socket: #{identity}" }
+      rz_debug { "closed socket: #{identity}" }
       rz_sockets.delete(socket)
 
       self

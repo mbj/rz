@@ -19,28 +19,28 @@ module RZ
     # Log message at debug level
     #
     # @param [Proc] &block block called to determine message
-    def debug(&block)
+    def rz_debug(&block)
       rz_log(:debug,&block)
     end
 
     # Log message at warn level
     #
     # @param [Proc] &block block called to determine message
-    def warn(&block)
+    def rz_warn(&block)
       rz_log(:warn,&block)
     end
 
     # Log message at info level
     #
     # @param [Proc] &block block called to determine message
-    def info(&block)
+    def rz_info(&block)
       rz_log(:info,&block)
     end
 
     # Log message at error level
     #
     # @param [Proc] &block block called to determine message
-    def error(&block)
+    def rz_error(&block)
       rz_log(:error,&block)
     end
   private
