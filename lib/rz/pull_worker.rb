@@ -9,7 +9,7 @@ module RZ
       include RZ::Context
       attr_reader :response_address, :request_address_a, :request_address_b
    
-      def run
+      def run_worker
         setup_sockets
         run_hook(:before_run)
         process_loop
