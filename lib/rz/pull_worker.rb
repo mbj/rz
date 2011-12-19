@@ -11,43 +11,42 @@ module RZ
    
       def run
         open_sockets
-
         run_hook(:before_run)
-
-        @active_request_socket=@request_socket_a
-
-        loop do
-          @now = Time.now
-          run_hook(:loop)
-          request = pull_request
-          case request
-          when :noop
-            switch_active_request_socket
-          when Array
-            process_request(request)
-          else NilClass
-            active_a = @active_request_socket == @request_socket_a
-            close_sockets
-            open_sockets
-            @active_request_socket = active_a ? @request_socket_b : @request_socket_a
-          end
-        end
+        process_loop
       ensure
         rz_cleanup
-        run_hook :after_run
+        run_hook(:after_run)
       end
    
-    private
+    protected
+    
+      def process_loop
+        loop do
+          run_hook(:loop)
+          process_loop_tick
+          run_hook(:loop_end)
+        end
+      end
 
-      def switch_active_request_socket
-        p :switch
-        @active_request_socket = 
-          case @active_request_socket
-          when @request_socket_a then @request_socket_b
-          when @request_socket_b then @request_socket_a
-          else 
-            raise 'should not happen'
-          end
+      def process_loop_tick
+        request = pull_request
+        case request
+        when :noop
+          @request_sockets.reverse!
+        when Array
+          process_request(request)
+        else NilClass
+          reconnect
+        end
+      end
+
+      def reconnect
+        close_sockets
+        open_sockets
+      end
+
+      def active_request_socket
+        @request_sockets.first
       end
 
       def close_sockets
@@ -56,20 +55,21 @@ module RZ
       end
 
       def open_sockets
-        @request_socket_a = rz_socket(ZMQ::DEALER)
-        @request_socket_a.connect(request_address_a)
-
-        @request_socket_b = rz_socket(ZMQ::DEALER)
-        @request_socket_b.connect(request_address_b)
-
-        @response_socket = rz_socket(ZMQ::DEALER)
-        @response_socket.connect(response_address)
-
-        if @rz_identity
-          @request_socket_a.setsockopt(ZMQ::IDENTITY,"#{@rz_identity}.req.a") 
-          @request_socket_b.setsockopt(ZMQ::IDENTITY,"#{@rz_identity}.req.b") 
-          @response_socket. setsockopt(ZMQ::IDENTITY,"#{@rz_identity}.res") 
+        %w(request_socket_a request_socket_b response_socket).each do |socket_name|
+          socket = rz_socket(ZMQ::DEALER)
+          socket.connect(self.send(socket_name.gsub('socket','address')))
+          instance_variable_set(:"@#{socket_name}",socket)
         end
+
+        @request_sockets = [@request_socket_a,@request_socket_b]
+
+        setup_socket_identities if @rz_identity
+      end
+
+      def setup_socket_identities
+        @request_socket_a.setsockopt(ZMQ::IDENTITY,"#{@rz_identity}.req.a") 
+        @request_socket_b.setsockopt(ZMQ::IDENTITY,"#{@rz_identity}.req.b") 
+        @response_socket. setsockopt(ZMQ::IDENTITY,"#{@rz_identity}.res") 
       end
 
       def initialize_worker(options)
@@ -96,13 +96,11 @@ module RZ
       end
 
       def pull_request
-        rz_send(@active_request_socket,DELIM)
+        active_request_socket = self.active_request_socket
 
-        ready = ZMQ.select([@active_request_socket],nil,nil,1.5)
+        rz_send(active_request_socket,DELIM)
 
-        return unless ready
-
-        message = rz_recv(@active_request_socket)
+        message = rz_read_timeout(active_request_socket,1.5) || return
 
         case message.length
         when 1
@@ -111,7 +109,7 @@ module RZ
         when 2
           message
         else
-          raise
+          raise 'should not happen'
         end
       end
     end

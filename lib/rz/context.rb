@@ -10,36 +10,47 @@ module RZ
 
   protected
 
+    # Close all registred zmq sockets
+    # @return self
+    def rz_sockets_close
+      rz_sockets = self.rz_sockets.dup
+      rz_sockets.each do |socket|
+        socket.setsockopt(ZMQ::LINGER,0)
+        rz_socket_close(socket)
+      end
+      @rz_sockets = nil
+    end
+
     # Cleanup this zmq environment. 
     # zmq context and all registred sockets are closed.
     #
     # @return self
     #
     def rz_cleanup
-      rz_sockets = self.rz_sockets.dup
-      rz_sockets.each do |socket|
-        socket.setsockopt(ZMQ::LINGER,0)
-        rz_socket_close(socket)
-      end
+      rz_sockets_close
 
       rz_context.close 
 
-      @rz_context = @rz_sockets = nil
+      @rz_context = nil
 
       self
     end
 
     def rz_select(sockets,timeout)
-      debug { "select: #{rz_identities(sockets).inspect}, #{timeout}" }
+      identities = sockets.map { |socket| socket.getsockopt(ZMQ::IDENTITY) }
+      debug { "select: #{identities}, #{timeout}" }
+
       ready = ZMQ.select(sockets,[],[],timeout)
-      debug do 
-        message = 
-          if ready
-            rz_identities(ready.first)
-          end
-        debug { "select done #{message.inspect}" }
+      unless ready
+        debug { "select done nil" }
+        return
       end
-      ready.first if ready
+
+      ready = ready.first
+
+      debug { "select done #{identities}" }
+
+      ready
     end
 
     # This contexts zmq context
@@ -61,32 +72,12 @@ module RZ
     #   The number of messages yielded
     def rz_consume_all(socket)
       count = 0
-      loop do
-        message = rz_recv(socket,ZMQ::NOBLOCK)
-        break unless message
+      while message = rz_recv(socket,ZMQ::NOBLOCK)
         count +=1
         yield message
       end
 
       count
-    end
-
-    # Recive one message from socket
-    #
-    # @param[ZMQ::Socket] socket
-    #   the socket where message should be recived from
-    #
-    # @yield [Array<String>] 
-    #   the recived message
-    #
-    # @return [true|false]
-    #   true if message was yielded otherwise false 
-    #
-    def rz_consume_one(socket)
-      message = rz_recv(socket,ZMQ::NOBLOCK)
-      yield message if message
-
-      !!message
     end
 
     # Split message into two parts. 
@@ -114,15 +105,6 @@ module RZ
       [[parts.first],parts[1..-1]]
     end
 
-
-    def rz_socket_type(type)
-      %W(DEALER ROUTER REQ RES PUSH PULL).each do |name|
-        ZMQ.const_get(name) == type
-        return name
-      end
-      nil
-    end
-
     # Recive all parts of a message at once with logging
     #
     # @param [ZMQ::Socket] socket
@@ -137,47 +119,24 @@ module RZ
     #   no message was recieved
     #
     def rz_recv(socket,flags=0)
-      debug { "#{rz_identity(socket)} recv message" }
+      identity = socket.getsockopt(ZMQ::IDENTITY)
+      debug { "#{identity} recv message" }
       message = []
       loop do
         part = socket.recv(flags)
-        unless part
-          debug { "#{rz_identity(socket)} recved no message" }
-          return
-        end
+        break unless part
         message << part
         more = socket.getsockopt(ZMQ::RCVMORE)
         break unless more
       end
-      debug { "#{rz_identity(socket)} recved message: #{message.inspect}" }
-
-      message
-    end
-
-    # Query multiple socket identities
-    #
-    # This is a helper method for debugging
-    #
-    # @param [Array<ZMQ::Socket>] sockets
-    #   the sockets to be queried
-    #
-    # @return [Array<String>] 
-    #   the sockets identities
-    #
-    def rz_identities(sockets)
-      sockets.map { |socket| rz_identity(socket) }
-    end
-
-    # Query socket identity
-    #
-    # @param [ZMQ::Socket] socket
-    #   the socket to be queried
-    #
-    # @return [String] 
-    #   the sockets identity
-    #
-    def rz_identity(socket)
-      socket.getsockopt(ZMQ::IDENTITY)
+      debug { "#{identity} recved message: #{message.inspect}" }
+      
+      if message.empty?
+        debug { "#{identity} recved no message" }
+        nil
+      else
+        message
+      end
     end
 
     # Send all parts of a message at once with logging
@@ -191,35 +150,22 @@ module RZ
     # @return self
     #
     def rz_send(socket,message)
-      debug { "#{rz_identity(socket)} send message: #{message.inspect}" }
+      identity = socket.getsockopt(ZMQ::IDENTITY)
+      debug { "#{identity} send message: #{message.inspect}" }
+      max = message.length-1
       message.each_with_index do |part,idx|
-        last = message.length == idx+1
-        flags = 0
-        flags |= ZMQ::SNDMORE unless last
-        unless socket.send part,flags
-          raise
-        end
+        socket.send(part,idx == max ? 0 : ZMQ::SNDMORE) || raise
       end
-      debug { "#{rz_identity(socket)} send finished" }
+      debug { "#{identity} send finished" }
 
       self
     end
 
-    # Create a registred zmq socket
-    # Registred zmq sockets will be closed when #rz_cleanup is called.
-    #
-    # @param [ZMQ::{REQ,REP,PUB,SUB,PUSH,PULL,PAIR]]
-    #   the zmq socket type to be created
-    #
-    # @return [ZMQ::Socket] the created socket
-    #
-    def rz_socket(type)
-      debug { "creating socket of type: #{rz_socket_type(type)}" }
-      socket = rz_context.socket(type)
-      debug { "created socket: #{socket}" }
-      rz_sockets << socket
-
-      socket
+    # Read blocking from socket with timeout
+    def rz_read_timeout(socket,timeout)
+      ready = rz_select([socket],timeout)
+      return unless ready
+      rz_recv(ready.first)
     end
 
     # Close a socket and unregister it
@@ -235,6 +181,12 @@ module RZ
       rz_sockets.delete(socket)
 
       self
+    end
+
+    def rz_socket(type)
+      socket = rz_context.socket(type) 
+      rz_sockets << socket
+      socket
     end
 
     # Return all registred zmq sockets

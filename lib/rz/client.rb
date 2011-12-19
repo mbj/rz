@@ -27,12 +27,8 @@ module RZ
     def receive(name,options={})
       timeout = options.fetch(:timeout,1)
 
-      socket = service_socket(name)
-
-      ready = ZMQ.select([socket],nil,nil,timeout)
-      return unless ready
-
-      message = rz_recv(socket)
+      message = rz_read_timeout(service_socket(name),timeout)
+      return unless message
 
       raise unless message.length == 1
 

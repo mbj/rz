@@ -53,12 +53,16 @@ module RZ
 
     module InstanceMethods
 
+      def json_load(body)
+        begin
+          JSON.load(body)
+        rescue
+          raise ClientError,'job body is not valid json'
+        end
+      end
+
       def process_job_body(body)
-        job = begin
-                JSON.load(body)
-              rescue
-                raise ClientError,'job body is not valid json'
-              end
+        job = json_load(body)
 
         unless job.is_a?(Hash)
           raise ClientError,'job was not a json object'
@@ -74,30 +78,7 @@ module RZ
         JobExecutor.format_exception_response(exception)
       end
 
-      def process_job(job)
-        name = job.fetch('name') do
-          raise ClientError,'missing "name" in job'
-        end
-
-        arguments = job.fetch('arguments') do
-          raise ClientError,'missing "arguments" in job'
-        end
-
-        unless name.is_a?(String)
-          raise ClientError,'name is not a String'
-        end
-
-        unless arguments.is_a?(Array)
-          raise ClientError,'arguments is not an Array'
-        end
-
-        block = self.class.requests[name]
-     
-        unless block
-          raise ClientError,"job #{name.inspect} is not registred"
-        end
-     
-        debug { "executing: #{name}, #{arguments.inspect}" }
+      def execute_job(block,arguments)
      
         begin
           case block
@@ -115,6 +96,30 @@ module RZ
         end
       end
 
+      def process_job(job)
+        name = fetch_option(job,'name',String)
+        arguments = fetch_option(job,'arguments',Array) 
+
+        block = self.class.requests[name]
+     
+        unless block
+          raise ClientError,"job #{name.inspect} is not registred"
+        end
+     
+        debug { "executing: #{name}, #{arguments.inspect}" }
+
+        execute_job(block,arguments)
+      end
+
+      def fetch_option(job,name,klass)
+        value = job.fetch(name) do
+          raise ClientError,"missing #{name.inspect} in job"
+        end
+        unless value.is_a?(klass)
+          raise ClientError,"#{name} is not a #{klass}"
+        end
+        value
+      end
     end 
 
     def self.format_exception_response(exception)
