@@ -5,50 +5,108 @@ module RZ
   module Client
     include Context
 
-    attr_reader :identity
-
+    # Send a request to service
+    #
+    # @param [String|Symbol] name the name of service
+    # @param [Hash] job the job definition
+    #
+    # @return self
     def request(name,job)
-      zmq_send(service_socket(name),['',JSON.dump(job)])
+      rz_send(service_socket(name),['',JSON.dump(job)])
+
+      self
     end
 
+    # Receive a response form service
+    #
+    # @param [String|Symbol] the name of service
+    # @param [Hash] options the receive options
+    #
+    # @return [Hash,nil]
+    #   the job result or nil in case of timeout
+    #
     def receive(name,options={})
       timeout = options.fetch(:timeout,1)
 
-      ready = ZMQ.select([service_socket(name)],nil,nil,timeout)
-      return unless ready
-      body = zmq_split(zmq_recv(service_socket(name))).last
-      raise unless body.length == 1
-      JSON.load(body.first)
-    end
+      socket = service_socket(name)
 
-    def services
-      return @services if defined? @services
-      raise 'You forgot to call initialize_client!'
+      ready = ZMQ.select([socket],nil,nil,timeout)
+      return unless ready
+
+      message = rz_recv(socket)
+
+      parse_response(message)
     end
 
   private
 
+    def parse_response(message)
+      p message
+      raise
+      body = rz_split(rz_recv(socket)).last
+
+      JSON.load(body.first)
+    end
+
+    # Initialize client
+    #
+    # @param [Hash] opts the options to initialize client with
+    # @option opts [Hash] :services the service addresses
+    #
+    # @return self
+    #
     # @example:
     #   Worker.new(
     #     :service_a => "tcp://127.0.0.1:4000",
     #     :service_b => "tcp://127.0.0.1:4001",
     #     :service_c => "tcp://127.0.0.1:4002",
     #   )
-
-    def initialize_client(options)
-      @services = options.fetch(:services) { raise ArgumentError,'missing :services in options' }
-      @identity = options.fetch(:identity,nil)
-    end
-
-    def service_socket(name)
-      zmq_named_socket "service_#{name}",ZMQ::DEALER do |socket|
-        socket.setsockopt(ZMQ::IDENTITY,identity) if identity
-        socket.connect service_address(name)
+    #
+    def initialize_client(opts)
+      @services = opts.fetch(:services) do 
+        raise ArgumentError,'missing :services in options'
       end
+      @rz_identity = opts.fetch(:rz_identity,nil)
+
+      self
     end
 
+    # Returns socket for service
+    #
+    # @param [String|Symbol] service name
+    #
+    # @return [ZMQ::Socket] 
+    #   the service socket
+    #
+    def service_socket(name)
+      service_sockets[name] ||= 
+        begin
+          socket = rz_socket(ZMQ::DEALER)
+          socket.setsockopt(ZMQ::IDENTITY,@rz_identity) if @rz_identity
+          socket.connect(service_address(name))
+          socket
+        end
+    end
+
+    # Return the service sockets
+    #
+    # @return [Hash] the service sockets
+    #
+    def service_sockets
+      @service_sockets ||= {}
+    end
+
+    # Returns address of service
+    #
+    # @param [String|Symbol] the name of service
+    # @raise [ArgumentException] raised when service does not exist
+    #
+    # @return [String] address of service
+    #
     def service_address(name)
-      services.fetch(name) { raise ArgumentError,"no address for service #{name.inspect}" }
+      @services.fetch(name) do 
+        raise ArgumentError,"no address for service #{name.inspect}"
+      end
     end
   end
 end

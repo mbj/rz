@@ -2,7 +2,9 @@
 
 require File.expand_path('../example',__FILE__)
 
-services = Hash[[:a,:b,:c].map { |name| [name,Example.addresses.fetch(name).fetch(:frontend_address)] }]
+services = Hash[[:a,:b,:c].map do |name| 
+  [name,Example.addresses.fetch(name).fetch(:frontend_address)] 
+end]
 
 options = {
   :services => services,
@@ -11,11 +13,17 @@ options = {
 
 Client.new(options).run do |client|
   services.keys.each do |service|
+    next unless service == :a
     count = 10
     puts "executing #{count} asynchronous requests to service #{service}"
 
     count.times do |i|
-      client.request service, { :name => :eval, :arguments => ["sleep 1; #{i}"], :job_id => i}
+      client.request(
+        service, 
+        :name => :eval, 
+        :arguments => ["sleep 10; #{i}"], 
+        :job_id => i
+      )
     end
 
 
@@ -24,7 +32,7 @@ Client.new(options).run do |client|
     puts "receiving answers from service #{service}"
 
     count.times do |i|
-      x = client.receive service, :timeout => 100
+      x = client.receive(service, :timeout => 100)
       puts "x: #{x} i: #{i}"
     end
 

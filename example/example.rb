@@ -4,25 +4,26 @@ $: << File.expand_path(File.join(File.dirname(__FILE__),'..','lib'))
 
 require 'rz/client'
 require 'rz/service'
-require 'rz/worker'
+require 'rz/pull_worker'
 require 'rz/service/statistics'
 
 class Client
   include RZ::Client
 
   # overriding log noop log, this interface needs to improve
-  def log(level)
-    puts yield
+  def rz_log(level,&block)
+    puts "#{level}: #{block.call}"
   end
 
   def run
     yield self
   ensure
-    zmq_cleanup
+    rz_cleanup
   end
 
   def initialize(options)
-    initialize_client options
+    options.merge!(:rz_identity => "client-#{Process.pid}")
+    initialize_client(options)
   end
 end
 
@@ -32,26 +33,28 @@ class Service
   include RZ::Service::Statistics
 
   # overriding log noop log, this interface needs to improve
-  def log(level)
-    puts yield
+  def rz_log(level,&block)
+    puts "#{level}: #{block.call}"
   end
 
   def initialize(options)
-    initialize_service options
+    options.merge!(:rz_identity => "service-#{Process.pid}")
+    initialize_service(options)
   end
 end
 
 
 class Worker
-  include RZ::Worker
+  include RZ::PullWorker
 
   def initialize(options)
+    options.merge!(:rz_identity => "worker-#{Process.pid}")
     initialize_worker(options)
   end
 
   # overriding log noop log, this interface needs to improve
-  def log(level)
-    puts yield
+  def rz_log(level,&block)
+    puts "#{level}: #{block.call}"
   end
 
   register :eval do |string|
@@ -84,7 +87,9 @@ module Example
   end
 
   def self.options_for(type,name)
-    addresses = self.addresses.fetch(name) { raise ArgumentError,"address for: #{name} does not exist" }
+    addresses = self.addresses.fetch(name) do 
+      raise ArgumentError,"address for: #{name} does not exist"
+    end
     addresses.merge :identity => "#{type}-#{name}-#{Process.pid}" 
   end
 end

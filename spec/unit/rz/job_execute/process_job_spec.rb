@@ -1,17 +1,21 @@
 require 'spec_helper'
+require 'rz/job_executor'
 
-describe RZ::Worker,'#dispatch_job' do
+describe RZ::JobExecutor,'#process_job' do
+  EXPECTED_EXCEPTION = RuntimeError.new
   let(:object) do
     Class.new do
-      include RZ::Worker
+      include RZ::JobExecutor
+
 
       register :job_that_raises do
-        raise
+        raise EXPECTED_EXCEPTION
       end
 
       register :interrupt do
         raise Interrupt
       end
+
 
       register :test_job do
         'result value'
@@ -23,13 +27,13 @@ describe RZ::Worker,'#dispatch_job' do
     end.new
   end
 
-  subject { object.send :dispatch_job,job }
+  subject { object.send :process_job,job }
 
   context 'when job does not have "name"' do
     let(:job) { {} }
 
     it 'should raise ArgumentError' do
-      expect { subject }.to raise_error(ArgumentError,'missing "name" in options')
+      expect { subject }.to raise_error(RZ::ClientError,'missing "name" in job')
     end
   end
 
@@ -37,7 +41,7 @@ describe RZ::Worker,'#dispatch_job' do
     let(:job) { { 'name' => 'test' } }
 
     it 'should raise ArgumentError' do
-      expect { subject }.to raise_error(ArgumentError,'missing "arguments" in options')
+      expect { subject }.to raise_error(RZ::ClientError,'missing "arguments" in job')
     end
   end
 
@@ -45,7 +49,7 @@ describe RZ::Worker,'#dispatch_job' do
     let(:job) { { 'name' => 'test', 'arguments' => [] } }
 
     it 'should raise ArgumentError' do
-      expect { subject }.to raise_error(ArgumentError,'job "test" is not registred')
+      expect { subject }.to raise_error(RZ::ClientError,'job "test" is not registred')
     end
   end
 
@@ -59,7 +63,12 @@ describe RZ::Worker,'#dispatch_job' do
     let(:job) { { 'name' => 'job_that_raises', 'arguments' => [] } }
 
     it 'should raise RZ::JobExecutionError' do
-      expect { subject }.to raise_error(RZ::JobExecutionError,'job "job_that_raises" failed with RuntimeError')
+      expect { subject }.to(
+        raise_error(RZ::ClientJobExecutionError,'job "job_that_raises" failed with RuntimeError') do |error|
+          error.original_exception.should == EXPECTED_EXCEPTION
+          error.job.should == job
+        end
+      )
     end
   end
 

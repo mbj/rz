@@ -14,11 +14,17 @@ module RZ
         ms = messages / (now - @s_loop_start_time)
         @history << [now,messages]
 
-        old_time,old_messages = @history.length == 1000 ? @history.slice!(0) : @history.first
+        old_time,old_messages = 
+          if @history.length == 1000 
+            @history.slice!(0) 
+          else
+            @history.first
+          end
 
         mss = now == old_time ? 0 : (messages - old_messages) / (now - old_time)
 
         $stderr.puts "msg: req: %03d rep: %03d noop: %03d miss: %03d m/s: %0.2f ms/s: %0.2f" % [@s_requests,@s_responses,@s_noops,@s_requests - @s_responses,ms,mss]
+
         self
       end
 
@@ -26,21 +32,25 @@ module RZ
 
       def count_noop
         @s_noops +=1
+
         self
       end
 
       def count_request
         @s_requests +=1
+
         self
       end
 
       def count_response
         @s_responses +=1
+
         self
       end
 
       def count_loop_start
         @s_loops += 1
+
         self
       end
 

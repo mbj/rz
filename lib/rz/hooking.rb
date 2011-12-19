@@ -18,7 +18,9 @@ module RZ
     module ClassMethods
       def hook(name,method_name=nil,&block)
         method_name ||= name unless block
-        raise ArgumentError,'provide method name or block not both' if method_name and block
+        if method_name and block
+          raise ArgumentError,'provide method name or block not both' 
+        end
         hooks_for(name) << (method_name || block)
       end
     

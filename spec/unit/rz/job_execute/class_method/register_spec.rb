@@ -1,9 +1,10 @@
-require 'rz/worker'
+require 'spec_helper'
+require 'rz/job_executor'
 
-describe RZ::Worker, '.register' do
+describe RZ::JobExecutor, '.register' do
   let(:object) do
     mod = Module.new do
-      include RZ::Worker
+      include RZ::JobExecutor
 
       class << self
         public :register

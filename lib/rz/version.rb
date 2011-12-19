@@ -1,3 +1,3 @@
 module RZ
-  VERSION = File.read(File.join(File.dirname(__FILE__),'..','..','VERSION')).strip
+  VERSION = '0.0.2'.freeze
 end
