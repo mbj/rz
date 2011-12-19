@@ -8,7 +8,7 @@ module RZ
     include Context
     include Logging
 
-    def run
+    def run_service
       run_hook :before_run
       open_sockets
       @request_sockets = [@request_socket_a,@request_socket_b]
