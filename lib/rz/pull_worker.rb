@@ -59,6 +59,9 @@ module RZ
         @request_socket_a = rz_socket(ZMQ::DEALER)
         @request_socket_a.connect(request_address_a)
 
+        @request_socket_b = rz_socket(ZMQ::DEALER)
+        @request_socket_b.connect(request_address_b)
+
         @response_socket = rz_socket(ZMQ::DEALER)
         @response_socket.connect(response_address)
 
@@ -89,8 +92,7 @@ module RZ
       end
 
       def send_response(client_address,response)
-        message = JSON.dump(response)
-        rz_send(@response_socket,DELIM + client_address + DELIM + [message])
+        rz_send(@response_socket,[client_address,JSON.dump(response)])
       end
 
       def pull_request
@@ -100,19 +102,18 @@ module RZ
 
         return unless ready
 
-        client_address,job_body =  rz_split(rz_recv(@active_request_socket))
+        message = rz_recv(@active_request_socket)
 
-        raise if job_body.length != 1
-
-        job_body = job_body.first
-
-        if job_body == 'NOOP'
+        case message.length
+        when 1
+          raise unless message.first.empty?
           :noop
+        when 2
+          message
         else
-          [client_address,job_body]
+          raise
         end
       end
-   
     end
 
     def self.included(base)

@@ -13,24 +13,14 @@ module RZ
 
       open_sockets
 
-      @active_req_socket = @request_socket_a
-      @blocking_socket   = @frontend_socket
+      @active_request_socket   = @request_socket_a
+      @inactive_request_socket = @request_socket_b
+
+      @blocking_socket = @frontend_socket
 
       run_hook :before_loop
 
       loop do
-        if @active_req_socket == @request_socket_a
-          p :acitve_a
-        end
-        if @active_req_socket == @request_socket_b
-          p :acitve_b
-        end
-        if @blocking_socket == @active_req_socket
-          p :block_req
-        end
-        if @blocking_socket == @frontend_socket
-          p :block_frontend
-        end
         run_hook :loop_start
         ready = rz_select([@response_socket,@blocking_socket],1)
         if ready
@@ -95,32 +85,27 @@ module RZ
 
     def process_response_socket
       rz_consume_all(@response_socket) do |message|
-        addr,body = rz_split(message)
+        addr,body = rz_split2(message)
         rz_send(@frontend_socket,body)
       end
     end
 
-    def process_frontend_socket
-      count = rz_consume_all(@active_req_socket) do |message|
-        worker_addr,worker_body = rz_split(message)
-        job_addr,job_body = rz_split(rz_recv(@frontend_socket))
-        parts = worker_addr + job_addr + DELIM + job_body
-        rz_send(@active_req_socket,parts)
-        run_hook :request
+    def process_pipe(active,passive)
+      message = rz_recv(passive,ZMQ::NOBLOCK)
+      if message
+        active_addr,active_body = rz_split2(message)
+        passive_addr,passive_body = rz_split2(rz_recv(active))
+        message =
+          if active == @frontend_socket
+            active_addr + passive_addr + passive_body
+          else
+            passive_addr + active_addr + active_body
+          end
+        rz_send(passive,message)
+        run_hook(:request)
+      else
+        @blocking_socket = passive
       end
-      @blocking_socket = @active_req_socket if count.zero?
-      self
-    end
-
-    def process_active_req_socket
-      count = rz_consume_all(@frontend_socket) do |message|
-        job_addr,job_body = rz_split(message)
-        worker_addr,worker_body = rz_split(rz_recv(@active_req_socket))
-        parts = worker_addr + job_addr + DELIM + job_body
-        rz_send(@active_req_socket,parts)
-        run_hook :request
-      end
-      @blocking_socket = @frontend_socket if count.zero?
     end
 
     def process_ready(ready)
@@ -129,37 +114,40 @@ module RZ
         when @response_socket
           process_response_socket
         when @frontend_socket
-          process_frontend_socket
-        when @active_req_socket
-          process_active_req_socket
+          process_pipe(@frontend_socket,@active_request_socket)
+        when @active_request_socket
+          process_pipe(@active_request_socket,@frontend_socket)
         else
           raise 'should not happen'
         end
+        # catch workers waiting on the wrong socket
+        p :noop_inactive
+        noop_socket(@inactive_request_socket)
       end
       self
     end
 
     def noop_socket(socket)
       rz_consume_all(socket) do |message|
-        addr,body = rz_split(message)
-        rz_send(socket,addr + DELIM + NOOP)
+        addr,body = rz_split2(message)
+        rz_send(socket,addr + DELIM)
       end
     end
 
-    def switch_active_req_socket
-      @active_req_socket = 
-        case @active_req_socket
-        when @request_socket_a then @request_socket_b
-        when @request_socket_b then @request_socket_a
-        else
-          raise 'should not happen'
-        end
+    def switch_active_request_socket
+      if @active_request_socket == @request_socket_a
+          @active_request_socket = @request_socket_b
+        @inactive_request_socket = @request_socket_a
+      else
+        @active_request_socket   = @request_socket_a
+        @inactive_request_socket = @request_socket_b
+      end
     end
 
     def noop
-      noop_socket(@active_req_socket)
+      noop_socket(@active_request_socket)
 
-      switch_active_req_socket
+      switch_active_request_socket
 
       @blocking_socket = @frontend_socket
 

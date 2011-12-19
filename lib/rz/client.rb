@@ -12,8 +12,7 @@ module RZ
     #
     # @return self
     def request(name,job)
-      rz_send(service_socket(name),['',JSON.dump(job)])
-
+      rz_send(service_socket(name),[JSON.dump(job)])
       self
     end
 
@@ -35,18 +34,12 @@ module RZ
 
       message = rz_recv(socket)
 
-      parse_response(message)
+      raise unless message.length == 1
+
+      JSON.load(message.first)
     end
 
   private
-
-    def parse_response(message)
-      p message
-      raise
-      body = rz_split(rz_recv(socket)).last
-
-      JSON.load(body.first)
-    end
 
     # Initialize client
     #

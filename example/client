@@ -14,14 +14,14 @@ options = {
 Client.new(options).run do |client|
   services.keys.each do |service|
     next unless service == :a
-    count = 10
+    count = 1
     puts "executing #{count} asynchronous requests to service #{service}"
 
     count.times do |i|
       client.request(
         service, 
         :name => :eval, 
-        :arguments => ["sleep 10; #{i}"], 
+        :arguments => ["sleep 20; #{i}"], 
         :job_id => i
       )
     end

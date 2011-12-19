@@ -31,7 +31,7 @@ module RZ
 
     def rz_select(sockets,timeout)
       debug { "select: #{rz_identities(sockets).inspect}, #{timeout}" }
-      ready = ZMQ.select(sockets,[],[],1)
+      ready = ZMQ.select(sockets,[],[],timeout)
       debug do 
         message = 
           if ready
@@ -89,7 +89,13 @@ module RZ
       !!message
     end
 
-    # Split message parts at first empty part
+    # Split message into two parts. 
+    #
+    # The first part is an array with only the first element.
+    # The second part is an array of the rest.
+    #
+    # @raise ArgumnetError 
+    #   if message has fewer than 2 elements.
     #
     # @param [Array<String>] message
     #   the message to be splitted
@@ -98,25 +104,16 @@ module RZ
     #   a two element array
     #
     # @example
-    #   message = ['my','','message','with','multiple','parts']
+    #   message = ['my','message','with','multiple','parts']
     #   rz_split(message) => [['my'],['message','with','multiple','parts']]
     #
-    def rz_split(message)
-      delim = nil
-      message.each_with_index do |part,idx|
-        if part.length == 0 
-          delim = idx 
-          break
-        end
+    def rz_split(parts)
+      if parts.length < 2
+        raise ArgumnentError,'message must have at least two parts'
       end
-
-      unless delim
-        p message
-        raise 'undelimited message' 
-      end
-
-      [message[0...delim],message[(delim+1)..-1]]
+      [[parts.first],parts[1..-1]]
     end
+
 
     def rz_socket_type(type)
       %W(DEALER ROUTER REQ RES PUSH PULL).each do |name|
@@ -219,7 +216,6 @@ module RZ
     def rz_socket(type)
       debug { "creating socket of type: #{rz_socket_type(type)}" }
       socket = rz_context.socket(type)
-      socket.setsockopt(ZMQ::LINGER,0)
       debug { "created socket: #{socket}" }
       rz_sockets << socket
 
