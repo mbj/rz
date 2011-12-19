@@ -129,12 +129,12 @@ module RZ
         more = socket.getsockopt(ZMQ::RCVMORE)
         break unless more
       end
-      debug { "#{identity} recved message: #{message.inspect}" }
       
       if message.empty?
         debug { "#{identity} recved no message" }
         nil
       else
+        debug { "#{identity} recved message: #{message.inspect}" }
         message
       end
     end
@@ -175,9 +175,10 @@ module RZ
     # @return self
     #
     def rz_socket_close(socket)
-      debug { "closing socket: #{socket}" }
+      identity = socket.getsockopt(ZMQ::IDENTITY)
+      debug { "closing socket: #{identity}" }
       socket.close
-      debug { "closed socket: #{socket}" }
+      debug { "closed socket: #{identity}" }
       rz_sockets.delete(socket)
 
       self

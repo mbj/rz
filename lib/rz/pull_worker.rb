@@ -10,7 +10,7 @@ module RZ
       attr_reader :response_address, :request_address_a, :request_address_b
    
       def run
-        open_sockets
+        setup_sockets
         run_hook(:before_run)
         process_loop
       ensure
@@ -42,7 +42,7 @@ module RZ
 
       def reconnect
         close_sockets
-        open_sockets
+        setup_sockets
       end
 
       def active_request_socket
@@ -54,34 +54,48 @@ module RZ
         rz_cleanup
       end
 
-      def open_sockets
-        %w(request_socket_a request_socket_b response_socket).each do |socket_name|
-          socket = rz_socket(ZMQ::DEALER)
-          socket.connect(self.send(socket_name.gsub('socket','address')))
-          instance_variable_set(:"@#{socket_name}",socket)
-        end
+      def setup_sockets
+        setup_request_socket_a
+        setup_request_socket_b
+        setup_response_socket
 
         @request_sockets = [@request_socket_a,@request_socket_b]
-
-        setup_socket_identities if @rz_identity
       end
 
-      def setup_socket_identities
-        @request_socket_a.setsockopt(ZMQ::IDENTITY,"#{@rz_identity}.req.a") 
-        @request_socket_b.setsockopt(ZMQ::IDENTITY,"#{@rz_identity}.req.b") 
-        @response_socket. setsockopt(ZMQ::IDENTITY,"#{@rz_identity}.res") 
+      def setup_request_socket_a
+        @request_socket_a = rz_socket(ZMQ::DEALER)
+        if @rz_identity
+          @request_socket_a.setsockopt(ZMQ::IDENTITY,"#{@rz_identity}.req.a") 
+        end
+        @request_socket_a.connect(request_address_a)
+      end
+
+      def setup_request_socket_b
+        @request_socket_b = rz_socket(ZMQ::DEALER)
+        if @rz_identity
+          @request_socket_b.setsockopt(ZMQ::IDENTITY,"#{@rz_identity}.req.b") 
+        end
+        @request_socket_b.connect(request_address_b)
+      end
+
+      def setup_response_socket
+        @response_socket = rz_socket(ZMQ::DEALER)
+        if @rz_identity
+          @response_socket.setsockopt(ZMQ::IDENTITY,"#{@rz_identity}.res") 
+        end
+        @response_socket.connect(response_address)
+      end
+
+      def fetch_option(options,key)
+        options.fetch(key) do 
+          raise ArgumentError,"missing #{key.inspect} in options"
+        end
       end
 
       def initialize_worker(options)
-        @response_address = options.fetch(:response_address) do 
-          raise ArgumentError,'missing :response_address in options'
-        end
-        @request_address_a = options.fetch(:request_address_a) do 
-          raise ArgumentError,'missing :request_address_a in options'
-        end
-        @request_address_b = options.fetch(:request_address_b) do 
-          raise ArgumentError,'missing :request_address_b in options'
-        end
+        @response_address  = fetch_option(options,:response_address)
+        @request_address_a = fetch_option(options,:request_address_a) 
+        @request_address_b = fetch_option(options,:request_address_b)
         @rz_identity = options.fetch(:rz_identity,nil)
       end
 
