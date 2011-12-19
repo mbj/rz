@@ -2,7 +2,7 @@ module RZ
   module Service
     module Statistics
       def before_run
-        @s_loops = @s_noops = @s_requests = @s_responses = 0
+        @s_loops = @s_noops = @s_requests = @s_drops = @s_responses = 0
         @s_loop_start_time = Time.now
         @history = []
         self
@@ -26,8 +26,7 @@ module RZ
 
         mss = now == old_time ? 0 : (messages - old_messages) / (now - old_time)
 
-        $stderr.puts "msg: req: %03d rep: %03d noop: %03d miss: %03d m/s: %0.2f ms/s: %0.2f" % [@s_requests,@s_responses,@s_noops,@s_requests - @s_responses,ms,mss]
-
+        $stderr.puts "msg: req: %03d rep: %03d drop: %03d noop: %03d miss: %03d m/s: %0.2f ms/s: %0.2f" % [@s_requests,@s_responses,@s_drops,@s_noops,@s_requests - @s_responses,ms,mss]
         self
       end
 
@@ -37,6 +36,10 @@ module RZ
         @s_noops +=1
 
         self
+      end
+
+      def count_drop
+        @s_drops +=1
       end
 
       def count_request
