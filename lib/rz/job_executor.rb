@@ -1,5 +1,6 @@
 require 'rz/errors'
 require 'rz/logging'
+require 'rz/helpers'
 
 module RZ
   module JobExecutor
@@ -78,8 +79,7 @@ module RZ
         JobExecutor.format_exception_response(exception)
       end
 
-      def execute_job(block,arguments)
-     
+      def execute_job(job,block,arguments)
         begin
           case block
           when Proc
@@ -97,8 +97,8 @@ module RZ
       end
 
       def process_job(job)
-        name = fetch_option(job,'name',String)
-        arguments = fetch_option(job,'arguments',Array) 
+        name = Helpers.fetch_option(job,'name',String)
+        arguments = Helpers.fetch_option(job,'arguments',Array) 
 
         block = self.class.requests[name]
      
@@ -106,19 +106,9 @@ module RZ
           raise ClientError,"job #{name.inspect} is not registred"
         end
      
-        debug { "executing: #{name}, #{arguments.inspect}" }
+        rz_info { "executing: #{name}, #{arguments.inspect}" }
 
-        execute_job(block,arguments)
-      end
-
-      def fetch_option(job,name,klass)
-        value = job.fetch(name) do
-          raise ClientError,"missing #{name.inspect} in job"
-        end
-        unless value.is_a?(klass)
-          raise ClientError,"#{name} is not a #{klass}"
-        end
-        value
+        execute_job(job,block,arguments)
       end
     end 
 

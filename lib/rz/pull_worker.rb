@@ -7,15 +7,17 @@ module RZ
   module PullWorker
     module InstanceMethods
       include RZ::Context
+
       attr_reader :response_address, :request_address_a, :request_address_b
    
       def run_worker
         setup_sockets
         run_hook(:before_run)
         process_loop
+      rescue Interrupt, SignalException
+        run_hook(:interrupted)
       ensure
         rz_cleanup
-        run_hook(:after_run)
       end
    
     protected
@@ -50,8 +52,10 @@ module RZ
       end
 
       def close_sockets
+        rz_socket_close(@request_socket_a)
+        rz_socket_close(@request_socket_b)
+        rz_socket_close(@response_socket)
         @request_socket_a = @request_socket_b = @response_socket = nil
-        rz_cleanup
       end
 
       def setup_sockets
@@ -86,16 +90,13 @@ module RZ
         @response_socket.connect(response_address)
       end
 
-      def fetch_option(options,key)
-        options.fetch(key) do 
-          raise ArgumentError,"missing #{key.inspect} in options"
-        end
-      end
-
       def initialize_worker(options)
-        @response_address  = fetch_option(options,:response_address)
-        @request_address_a = fetch_option(options,:request_address_a) 
-        @request_address_b = fetch_option(options,:request_address_b)
+        @response_address  = 
+          Helpers.fetch_option(options,:response_address,String)
+        @request_address_a = 
+          Helpers.fetch_option(options,:request_address_a,String) 
+        @request_address_b = 
+          Helpers.fetch_option(options,:request_address_b,String)
         @rz_identity = options.fetch(:rz_identity,nil)
       end
 

@@ -27,6 +27,8 @@ module RZ
     # @return self
     #
     def rz_cleanup
+      rz_debug { 'rz cleanup' }
+
       rz_sockets_close
 
       rz_context.close 
@@ -185,6 +187,7 @@ module RZ
     end
 
     def rz_socket(type)
+      rz_debug { "creating socket" }
       socket = rz_context.socket(type) 
       rz_sockets << socket
       socket

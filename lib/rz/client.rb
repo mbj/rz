@@ -28,7 +28,10 @@ module RZ
       timeout = options.fetch(:timeout,1)
 
       message = rz_read_timeout(service_socket(name),timeout)
-      return unless message
+
+      unless message
+        raise RZ::Error,"did not recive a message in #{timeout} seconds"
+      end
 
       raise unless message.length == 1
 

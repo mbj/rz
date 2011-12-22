@@ -31,6 +31,11 @@ module RZ
       def hooks_for(name)
         hooks[name] ||= []
       end
+
+      def inherited(base)
+        super(base)
+        base.hooks.replace(hooks.dup)
+      end
     end
 
     def self.included(base)

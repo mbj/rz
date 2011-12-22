@@ -2,6 +2,7 @@ require 'json'
 require 'rz/context'
 require 'rz/hooking'
 require 'rz/logging'
+require 'rz/helpers'
 
 module RZ
   module Service
@@ -9,7 +10,7 @@ module RZ
     include Logging
 
     def run_service
-      run_hook :before_run
+      run_hook(:before_run)
       open_sockets
       @request_sockets = [@request_socket_a,@request_socket_b]
 
@@ -17,7 +18,7 @@ module RZ
 
       process_loop
     rescue Interrupt, SignalException
-      run_hook :interrupted
+      run_hook(:interrupted)
     ensure
       rz_cleanup
     end
@@ -63,10 +64,14 @@ module RZ
                 :request_address_b
 
     def initialize_service(options)
-      @frontend_address  = fetch_option(options,:frontend_address) 
-      @request_address_a = fetch_option(options,:request_address_a) 
-      @request_address_b = fetch_option(options,:request_address_b)
-      @response_address  = fetch_option(options,:response_address)
+      @frontend_address  = 
+        Helpers.fetch_option(options,:frontend_address,String)
+      @request_address_a = 
+        Helpers.fetch_option(options,:request_address_a,String)
+      @request_address_b = 
+        Helpers.fetch_option(options,:request_address_b,String)
+      @response_address  = 
+        Helpers.fetch_option(options,:response_address,String)
       @rz_identity = options.fetch(:rz_identity,nil)
     end
 
