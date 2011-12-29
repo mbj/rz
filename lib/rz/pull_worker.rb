@@ -19,7 +19,7 @@ module RZ
       ensure
         rz_cleanup
       end
-   
+
     protected
     
       def process_loop

@@ -50,6 +50,10 @@ module RZ
         requests[name] = block || true
         self
       end
+
+      def inherited(base)
+        base.requests.replace(requests.clone)
+      end
     end
 
     module InstanceMethods
@@ -72,7 +76,7 @@ module RZ
         result = process_job(job)
 
         response = job.merge(
-          'state' => :success,
+          'status' => :success,
           'result' => result
         )
       rescue ClientError => exception
@@ -83,7 +87,8 @@ module RZ
         begin
           case block
           when Proc
-            block.call(*arguments)
+            self.instance_exec(*arguments,&block)
+            #block.call(*arguments)
           when true
             send(name,*arguments)
           else

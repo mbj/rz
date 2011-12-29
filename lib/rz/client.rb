@@ -5,6 +5,9 @@ module RZ
   module Client
     include Context
 
+    class TimeoutError < RZ::Error
+    end
+
     # Send a request to service
     #
     # @param [String|Symbol] name the name of service
@@ -21,7 +24,7 @@ module RZ
     # @param [String|Symbol] the name of service
     # @param [Hash] options the receive options
     #
-    # @return [Hash,nil]
+    # @return [Hash]
     #   the job result or nil in case of timeout
     #
     def receive(name,options={})
@@ -30,15 +33,86 @@ module RZ
       message = rz_read_timeout(service_socket(name),timeout)
 
       unless message
-        raise RZ::Error,"did not recive a message in #{timeout} seconds"
+        raise TimeoutError,"did not receive a message in #{timeout} seconds"
       end
 
       raise unless message.length == 1
 
-      JSON.load(message.first)
+      message = JSON.load(message.first)
+
+      unless message.kind_of?(Hash)
+        raise RZ::Error,"message loaded as #{message.class} exected Hash"
+      end
+
+      message
+    end
+
+    # Invoke an "relihable" rpc style request receive cycle
+    # Pls make sure your calls are idempotent, since there is a small
+    # chance your request is executed twice! Do not mix with streaming requests!
+    #
+    # @param [String|Symbol] the name of service
+    # @param [Hash] options the rpc options
+    def rpc(service_name,task_name,arguments,options={})
+      request(service_name,:name => task_name,:arguments => [*arguments])
+      max_retries = options.fetch(:max_retries,1)
+      left_retries = max_retries
+      loop do
+        begin
+          return receive_with_error_handling(service_name,options)
+        rescue TimeoutError
+          left_retries -= 1
+          raise unless left_retries > 0
+        end
+      end
+    rescue TimeoutError => exception
+      raise TimeoutError,"#{exception.message} after #{max_retries} retries"
+    end
+
+    # Recive a response with error handling
+    # @param [String|Symbol] then mae of service
+    # @param [Hash] options the receive options
+    #
+    # @return [Hash]
+    #   the job result
+    def receive_with_error_handling(name,options={})
+      message = receive(name,options)
+      status = message['status']
+      case status
+      when 'success'
+        message
+      when 'error'
+        raise_error_for_message(message)
+      else
+        $stderr.puts message.inspect
+        raise RZ::Error,"message status #{status.inspect} is unkown"
+      end
     end
 
   private
+
+    class RemoteError < RZ::Error
+      alias :local_backtrace :backtrace
+
+      attr_reader :backtrace
+
+      def initialize(message,backtrace)
+        super(message)
+        @backtrace = backtrace
+      end
+    end
+
+    def raise_error_for_message(message)
+      error = message['error']
+      case error
+      when Hash
+        backtrace = error['backtrace']
+        message = error['message']
+        raise RemoteError.new(message,backtrace)
+      else
+        raise RZ::Error,'unable to construct exception' 
+      end
+    end
 
     # Initialize client
     #

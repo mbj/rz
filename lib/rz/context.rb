@@ -68,7 +68,7 @@ module RZ
     #   the socket where messages should be recieved from 
     #
     # @yield [Array<String>] 
-    #   each recived message
+    #   each received message
     #
     # @return Integer
     #   The number of messages yielded
@@ -110,7 +110,7 @@ module RZ
     # Recive all parts of a message at once with logging
     #
     # @param [ZMQ::Socket] socket
-    #   the socket where message should be recived from
+    #   the socket where message should be received from
     #
     # @param [Integer] flags
     #   the zmq flags used for recieving messages

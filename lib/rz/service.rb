@@ -23,6 +23,7 @@ module RZ
       rz_cleanup
     end
 
+
   protected
 
     def process_loop
@@ -172,7 +173,7 @@ module RZ
     end
 
     def self.included(base)
-      base.send :include,Hooking
+      base.send(:include,Hooking)
     end
   end
 end
