@@ -39,10 +39,12 @@ module RZ
     end
 
     def rz_select(sockets,timeout)
-      identities = sockets.map { |socket| socket.getsockopt(ZMQ::IDENTITY) }
-      rz_debug { "select: #{identities}, #{timeout}" }
+      rz_debug do
+        identities = sockets.map { |socket| socket.getsockopt(ZMQ::IDENTITY) }
+        "select: #{identities}, #{timeout}"
+      end
 
-      ready = ZMQ.select(sockets,[],[],timeout)
+      ready = ZMQ.select(sockets,nil,nil,timeout)
       unless ready
         rz_debug { "select done nil" }
         return
@@ -50,7 +52,10 @@ module RZ
 
       ready = ready.first
 
-      rz_debug { "select done #{identities}" }
+      rz_debug do
+        identities = ready.map { |socket| socket.getsockopt(ZMQ::IDENTITY) }
+        "select done #{identities}"
+      end
 
       ready
     end

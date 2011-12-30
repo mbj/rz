@@ -1,5 +1,6 @@
 require 'json'
 require 'rz/context'
+require 'rz/errors'
 
 module RZ
   module Client
@@ -54,19 +55,39 @@ module RZ
     # @param [String|Symbol] the name of service
     # @param [Hash] options the rpc options
     def rpc(service_name,task_name,arguments,options={})
-      request(service_name,:name => task_name,:arguments => [*arguments])
       max_retries = options.fetch(:max_retries,1)
       left_retries = max_retries
+
       loop do
+        request_id = "#{@identity}-#{@counter+=1}"
+        request(
+          service_name,
+          :name => task_name,
+          :arguments => [*arguments],
+          :request_id => request_id
+        )
         begin
-          return receive_with_error_handling(service_name,options)
+          return receive_rpc_response(service_name,request_id,options)
         rescue TimeoutError
+          rz_warn { "rpc timeout, left retries #{left_retries}" }
           left_retries -= 1
           raise unless left_retries > 0
         end
       end
     rescue TimeoutError => exception
       raise TimeoutError,"#{exception.message} after #{max_retries} retries"
+    end
+
+    def receive_rpc_response(service_name,request_id,options)
+      loop do
+        message = receive_with_error_handling(service_name,options)
+        unless message['request_id'] == request_id
+          $stderr.puts message.inspect
+          rz_warn { 'dropping duplicated or unexpected reply' }
+          next
+        end
+        return message
+      end
     end
 
     # Recive a response with error handling
@@ -133,6 +154,8 @@ module RZ
         raise ArgumentError,'missing :services in options'
       end
       @rz_identity = opts.fetch(:rz_identity,nil)
+      @identity    = @rz_identity ||= "#{Socket.gethostname}-#{Process.pid}"
+      @counter     = 0
 
       self
     end

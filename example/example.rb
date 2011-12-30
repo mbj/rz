@@ -37,6 +37,10 @@ class Service
     puts "#{level}: #{block.call}"
   end
 
+  def run
+    run_service
+  end
+
   def initialize(options)
     options.merge!(:rz_identity => "service-#{Process.pid}")
     initialize_service(options)
@@ -50,6 +54,10 @@ class Worker
   def initialize(options)
     options.merge!(:rz_identity => "worker-#{Process.pid}")
     initialize_worker(options)
+  end
+
+  def run
+    run_worker
   end
 
   # overriding log noop log, this interface needs to improve
@@ -67,20 +75,17 @@ module Example
     { 
       :a => {
         :response_address  => 'tcp://127.0.0.1:8001',
-        :request_address_a => 'tcp://127.0.0.1:8002',
-        :request_address_b => 'tcp://127.0.0.1:8003',
+        :request_address   => 'tcp://127.0.0.1:8002',
         :frontend_address  => 'tcp://127.0.0.1:8000'
       },
       :b => {
         :response_address  => 'tcp://127.0.0.1:8010',
-        :request_address_a => 'tcp://127.0.0.1:8020',
-        :request_address_b => 'tcp://127.0.0.1:8030',
+        :request_address   => 'tcp://127.0.0.1:8020',
         :frontend_address  => 'tcp://127.0.0.1:8000'
       },
       :c => {
         :response_address  => 'tcp://127.0.0.1:8100',
-        :request_address_a => 'tcp://127.0.0.1:8200',
-        :request_address_b => 'tcp://127.0.0.1:8300',
+        :request_address   => 'tcp://127.0.0.1:8200',
         :frontend_address  => 'tcp://127.0.0.1:8000'
       },
     }
