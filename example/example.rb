@@ -7,13 +7,18 @@ require 'rz/service'
 require 'rz/pull_worker'
 require 'rz/service/statistics'
 
+module Logging
+  # overriding log noop, this interface needs to improve
+  if ENV['RZ_DEBUG']
+    def rz_log(level,&block)
+      puts "#{level}: #{block.call}"
+    end
+  end
+end
+
 class Client
   include RZ::Client
-
-  # overriding log noop log, this interface needs to improve
-  def rz_log(level,&block)
-    puts "#{level}: #{block.call}"
-  end
+  include Logging
 
   def run
     yield self
@@ -31,11 +36,7 @@ end
 class Service
   include RZ::Service
   include RZ::Service::Statistics
-
-  # overriding log noop log, this interface needs to improve
-  def rz_log(level,&block)
-    puts "#{level}: #{block.call}"
-  end
+  include Logging
 
   def run
     run_service
@@ -50,6 +51,7 @@ end
 
 class Worker
   include RZ::PullWorker
+  include Logging
 
   def initialize(options)
     options.merge!(:rz_identity => "worker-#{Process.pid}")
@@ -98,4 +100,3 @@ module Example
     addresses.merge :identity => "#{type}-#{name}-#{Process.pid}" 
   end
 end
-

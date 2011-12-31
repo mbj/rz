@@ -1,6 +1,5 @@
 # Ruby ZeroMQ based job server with truly pulling workers.
 
-
 This project is primarily a playground to build a ruby job server that solves 
 some of my messaging problems using ZMQ primitives. 
 
@@ -82,8 +81,8 @@ $ git clone git://github.com/mbj/rz.git
 $ cd rz
 $ gem install bundler
 $ bundle install
-examples/service &
-examples/worker &
+examples/service a &
+examples/worker a &
 examples/client &
 ```
 
