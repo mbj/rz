@@ -131,8 +131,6 @@ module RZ
         consumes += 1
         addr,body = rz_split(message)
         worker_sequence = Helpers.unpack_int(body.first)
-        puts "worker_sequence: #{worker_sequence}"
-        puts "service_sequence: #{@sequence}"
         if worker_sequence == @sequence
           rz_send(@request_socket,addr + [Helpers.pack_int(0)])
           break
