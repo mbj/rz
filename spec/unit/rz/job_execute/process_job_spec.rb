@@ -33,7 +33,7 @@ describe RZ::JobExecutor,'#process_job' do
     let(:job) { {} }
 
     it 'should raise ArgumentError' do
-      expect { subject }.to raise_error(RZ::ClientError,'missing "name" in job')
+      expect { subject }.to raise_error(RZ::ClientError,'missing "name" in options')
     end
   end
 
@@ -41,7 +41,7 @@ describe RZ::JobExecutor,'#process_job' do
     let(:job) { { 'name' => 'test' } }
 
     it 'should raise ArgumentError' do
-      expect { subject }.to raise_error(RZ::ClientError,'missing "arguments" in job')
+      expect { subject }.to raise_error(RZ::ClientError,'missing "arguments" in options')
     end
   end
 

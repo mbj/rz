@@ -5,7 +5,7 @@ module RZ
         raise "only can fetch option from Hash got #{option.class}"
       end
       value = option.fetch(name) do
-        raise ClientError,"missing #{name.inspect} in option"
+        raise ClientError,"missing #{name.inspect} in options"
       end
       if klass and !value.is_a?(klass)
         raise ClientError,"#{name} is not a #{klass}"
