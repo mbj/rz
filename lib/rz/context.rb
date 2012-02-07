@@ -15,7 +15,7 @@ module RZ
     def rz_sockets_close
       rz_sockets = self.rz_sockets.dup
       rz_sockets.each do |socket|
-        socket.setsockopt(ZMQ::LINGER,0)
+        #socket.setsockopt(ZMQ::LINGER,0)
         rz_socket_close(socket)
       end
       @rz_sockets = nil
